@@ -1,13 +1,24 @@
 {
+    "version": "2.0.0",
     "tasks": [
         {
-            "type": "vs64",
-            "action": "build",
+            "label": "Build and Run C64 Project",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/build.ps1"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "label": "build project"
+            "presentation": {
+                "clear": true,
+                "panel": "shared"
+            }
         }
     ]
 }

@@ -1,9 +1,11 @@
 init:
+    sys 57812 "routines",8,1:poke 780,0:sys 65493:rem load asm
+
     r=rnd(-ti):rem initialize random number generator
     tl=0:br=1:x=0:y=1:rem for readability
 
     dim rm(8,1,1):rem rooms in the nine (3x3) sectors
-    dim rf(8):rem flags: 0-phantom room, 1-has light, 4-lighted up already
+    dim rf(8):rem flags 0-phantom room, 1-has light, 4-lighted up already
 
     dim cn(8),vs(8),al(8),ct(3):rem temporary arrays for room connections
 
@@ -11,7 +13,7 @@ init:
     poke 53280,0:poke 53281,0
 
 reset_new_level:
-    poke 646,0:rem set background color (0) to hide undiscovered dungeon parts
+    poke 646,2:rem set background color (0) to hide undiscovered dungeon parts
 
     seed=-int(rnd(0)*32768)-1:rem random seed
     rem seed=-18177
@@ -32,10 +34,22 @@ reset_new_level:
     next i
 
     set_level:
-    print "{clr}{darkgrey}create map..."
+    print "{clr}{dark gray}create map..."
+
+    poke tlx_var,0   :rem tlx  ($c700)
+    poke tly_var,0   :rem tly  ($c701)
+
+    poke brx_var,39  :rem brx  ($c702)
+    poke bry_var,24  :rem bry  ($c703)
+
+    poke chr_var,46   :rem chr  ($c704)
+    poke col_var,3   :rem col  ($c705)
+    sys fillRect_char
+
     gosub create_map
     gosub draw_map
     print "{home}             "
+    sys fillRect_color
 
     n=int(rnd(1)*9):rem room of passage to next level
 
@@ -351,3 +365,5 @@ draw_corridors:
                 a0=ax+j*40:poke 1024+a0,35:rem corridor
             next j
             return
+
+    rem *** end of program ***
