@@ -35,21 +35,9 @@ reset_new_level:
 
     set_level:
     print "{clr}{dark gray}create map..."
-
-    poke tlx_var,0   :rem tlx  ($c700)
-    poke tly_var,0   :rem tly  ($c701)
-
-    poke brx_var,39  :rem brx  ($c702)
-    poke bry_var,24  :rem bry  ($c703)
-
-    poke chr_var,46   :rem chr  ($c704)
-    poke col_var,3   :rem col  ($c705)
-    sys fillRect_char
-
     gosub create_map
     gosub draw_map
     print "{home}             "
-    sys fillRect_color
 
     n=int(rnd(1)*9):rem room of passage to next level
 
@@ -133,25 +121,37 @@ light_up_player_area:
     return
 
 light_up_corridor:
-    c=peek(1024+p-41):if c=35 or c=43 then poke 55296+p-41,1
-    c=peek(1024+p-40):if c=35 or c=43 then poke 55296+p-40,1
-    c=peek(1024+p-39):if c=35 or c=43 then poke 55296+p-39,1
-    c=peek(1024+p-1) :if c=35 or c=43 then poke 55296+p-1, 1
-    c=peek(1024+p+1) :if c=35 or c=43 then poke 55296+p+1, 1
-    c=peek(1024+p+39):if c=35 or c=43 then poke 55296+p+39,1
-    c=peek(1024+p+40):if c=35 or c=43 then poke 55296+p+40,1
-    c=peek(1024+p+41):if c=35 or c=43 then poke 55296+p+41,1
+    poke plx_var,px
+    poke ply_var,py
+    sys lightUp_corridor
+
+    rem c=peek(1024+p-41):if c=35 or c=43 then poke 55296+p-41,1
+    rem c=peek(1024+p-40):if c=35 or c=43 then poke 55296+p-40,1
+    rem c=peek(1024+p-39):if c=35 or c=43 then poke 55296+p-39,1
+    rem c=peek(1024+p-1) :if c=35 or c=43 then poke 55296+p-1, 1
+    rem c=peek(1024+p+1) :if c=35 or c=43 then poke 55296+p+1, 1
+    rem c=peek(1024+p+39):if c=35 or c=43 then poke 55296+p+39,1
+    rem c=peek(1024+p+40):if c=35 or c=43 then poke 55296+p+40,1
+    rem c=peek(1024+p+41):if c=35 or c=43 then poke 55296+p+41,1
     return
 
 light_up_room:
-    if (rf(cr) and 16)<>0 then return:rem light is already on
     if (rf(cr) and 2)=0 then return:rem no light
-    for i=rm(cr,tl,x) to rm(cr,br,x)
-        for j=rm(cr,tl,y) to rm(cr,br,y)
-            poke 55296+i+j*40,1
-        next j
-    next i
-    rf(cr)=rf(cr) or 16:rem light is on
+    poke tlx_var,rm(cr,tl,x)
+    poke tly_var,rm(cr,tl,y)
+    poke brx_var,rm(cr,br,x)
+    poke bry_var,rm(cr,br,y)
+    poke col_var,1
+    sys fillColor
+
+    rem if (rf(cr) and 16)<>0 then return:rem light is already on
+    rem for i=rm(cr,tl,x) to rm(cr,br,x)
+    rem     for j=rm(cr,tl,y) to rm(cr,br,y)
+    rem         poke 55296+i+j*40,1
+    rem     next j
+    rem next i
+    rem rf(cr)=rf(cr) or 16:rem light is on
+
     return
 
 
@@ -257,23 +257,30 @@ draw_rooms:
     for i=0 to 8
         rem check phantom rooms
         if (rf(i) and 1)=1 then poke 1024+rm(i,tl,x)+rm(i,tl,y)*40,35:goto room_drawing_done
-        rem horizontal walls
-        a0=rm(i,tl,y)*40:a1=rm(i,br,y)*40
-        for j=rm(i,tl,x)+1 to rm(i,br,x)-1
-            poke 1024+j+a0,67
-            poke 1024+j+a1,67
-        next j
-        poke 1024+rm(i,tl,x)+a0,112
-        poke 1024+rm(i,br,x)+a0,110
-        rem vertical walls
-        for j=rm(i,tl,y)+1 to rm(i,br,y)-1
-            a0=rm(i,tl,x)+j*40:a1=rm(i,br,x)+j*40
-            poke 1024+a0,66
-            poke 1024+a1,66
-            for k=a0+1 to a1-1:poke 1024+k,46:next k:rem floor
-        next j
-        poke 1024+rm(i,tl,x)+rm(i,br,y)*40,109
-        poke 1024+rm(i,br,x)+rm(i,br,y)*40,125
+
+        poke tlx_var,rm(i,tl,x)
+        poke tly_var,rm(i,tl,y)
+        poke brx_var,rm(i,br,x)
+        poke bry_var,rm(i,br,y)
+        sys drawRoom
+
+        rem rem horizontal walls
+        rem a0=rm(i,tl,y)*40:a1=rm(i,br,y)*40
+        rem for j=rm(i,tl,x)+1 to rm(i,br,x)-1
+        rem     poke 1024+j+a0,67
+        rem     poke 1024+j+a1,67
+        rem next j
+        rem poke 1024+rm(i,tl,x)+a0,112
+        rem poke 1024+rm(i,br,x)+a0,110
+        rem rem vertical walls
+        rem for j=rm(i,tl,y)+1 to rm(i,br,y)-1
+        rem     a0=rm(i,tl,x)+j*40:a1=rm(i,br,x)+j*40
+        rem     poke 1024+a0,66
+        rem     poke 1024+a1,66
+        rem     for k=a0+1 to a1-1:poke 1024+k,46:next k:rem floor
+        rem next j
+        rem poke 1024+rm(i,tl,x)+rm(i,br,y)*40,109
+        rem poke 1024+rm(i,br,x)+rm(i,br,y)*40,125
 
         room_drawing_done:
     next i
