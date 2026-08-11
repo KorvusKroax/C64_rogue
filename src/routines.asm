@@ -221,5 +221,53 @@ next_lightUpCorridorPos:
         inx
         cpx npy_p1
         bne loop_lightUpCorridorRow
+        rts
 
+
+
+
+
+lightUp_playerArea:
+        lda plx_var
+        sta npx_var
+        dec npx_var
+
+        lda ply_var
+        sta npy_var
+        dec npy_var
+
+        lda ply_var
+        sta npy_p1
+        inc npy_p1
+        inc npy_p1
+
+        ldx npy_var
+loop_lightUpPlayerAreaRow:
+        lda screen_lo,x
+        clc
+        adc npx_var
+        sta screenPointer
+        lda screen_hi,x
+        adc #$00
+        sta screenPointer+1
+
+        lda color_lo,x
+        clc
+        adc npx_var
+        sta colorPointer
+        lda color_hi,x
+        adc #$00
+        sta colorPointer+1
+
+        ldy #$00
+        lda #$01                ; white
+loop_lightUpPlayerAreaColumn:
+        sta (colorPointer),y
+        iny
+        cpy #$03
+        bne loop_lightUpPlayerAreaColumn
+
+        inx
+        cpx npy_p1
+        bne loop_lightUpPlayerAreaRow
         rts

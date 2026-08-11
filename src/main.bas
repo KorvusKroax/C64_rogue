@@ -110,14 +110,18 @@ get_player_room:
     return
 
 light_up_player_area:
-    poke 55296+p-41,1
-    poke 55296+p-40,1
-    poke 55296+p-39,1
-    poke 55296+p-1, 1
-    poke 55296+p+1, 1
-    poke 55296+p+39,1
-    poke 55296+p+40,1
-    poke 55296+p+41,1
+    poke plx_var,px
+    poke ply_var,py
+    sys lightUp_playerArea
+
+    rem poke 55296+p-41,1
+    rem poke 55296+p-40,1
+    rem poke 55296+p-39,1
+    rem poke 55296+p-1, 1
+    rem poke 55296+p+1, 1
+    rem poke 55296+p+39,1
+    rem poke 55296+p+40,1
+    rem poke 55296+p+41,1
     return
 
 light_up_corridor:
