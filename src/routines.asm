@@ -19,9 +19,9 @@ bry_p1      = $c706
 plx_var     = $c707
 ply_var     = $c708
 
-npx_var     = $c709
-npy_var     = $c70a
-npy_p1      = $c70b
+x_var       = $c709
+y_var       = $c70a
+y_p1        = $c70b
 
 
 
@@ -171,23 +171,23 @@ color_hi:
 
 lightUp_corridor:
         lda plx_var
-        sta npx_var
-        dec npx_var
+        sta x_var
+        dec x_var
 
         lda ply_var
-        sta npy_var
-        dec npy_var
+        sta y_var
+        dec y_var
 
         lda ply_var
-        sta npy_p1
-        inc npy_p1
-        inc npy_p1
+        sta y_p1
+        inc y_p1
+        inc y_p1
 
-        ldx npy_var
+        ldx y_var
 loop_lightUpCorridorRow:
         lda screen_lo,x
         clc
-        adc npx_var
+        adc x_var
         sta screenPointer
         lda screen_hi,x
         adc #$00
@@ -195,7 +195,7 @@ loop_lightUpCorridorRow:
 
         lda color_lo,x
         clc
-        adc npx_var
+        adc x_var
         sta colorPointer
         lda color_hi,x
         adc #$00
@@ -219,7 +219,7 @@ next_lightUpCorridorPos:
         bne loop_lightUpCorridorColumn
 
         inx
-        cpx npy_p1
+        cpx y_p1
         bne loop_lightUpCorridorRow
         rts
 
@@ -229,23 +229,23 @@ next_lightUpCorridorPos:
 
 lightUp_playerArea:
         lda plx_var
-        sta npx_var
-        dec npx_var
+        sta x_var
+        dec x_var
 
         lda ply_var
-        sta npy_var
-        dec npy_var
+        sta y_var
+        dec y_var
 
         lda ply_var
-        sta npy_p1
-        inc npy_p1
-        inc npy_p1
+        sta y_p1
+        inc y_p1
+        inc y_p1
 
-        ldx npy_var
+        ldx y_var
 loop_lightUpPlayerAreaRow:
         lda screen_lo,x
         clc
-        adc npx_var
+        adc x_var
         sta screenPointer
         lda screen_hi,x
         adc #$00
@@ -253,7 +253,7 @@ loop_lightUpPlayerAreaRow:
 
         lda color_lo,x
         clc
-        adc npx_var
+        adc x_var
         sta colorPointer
         lda color_hi,x
         adc #$00
@@ -268,6 +268,6 @@ loop_lightUpPlayerAreaColumn:
         bne loop_lightUpPlayerAreaColumn
 
         inx
-        cpx npy_p1
+        cpx y_p1
         bne loop_lightUpPlayerAreaRow
         rts
