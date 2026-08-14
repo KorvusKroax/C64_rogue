@@ -2,9 +2,10 @@
 
 SCREEN_MEM  = $0400
 COLOR_MEM   = $d800
+MAP_MEM     = $8000
 
 screenPointer   = $fb
-colorPointer    = $fd
+mapPointer      = $fd
 
 tlx_var     = $c700
 tly_var     = $c701
@@ -14,260 +15,280 @@ bry_var     = $c703
 col_var     = $c704
 
 width_var   = $c705
-bry_p1      = $c706
+bry_final      = $c706
 
 plx_var     = $c707
 ply_var     = $c708
 
 x_var       = $c709
 y_var       = $c70a
-y_p1        = $c70b
+y_final     = $c70b
+
+
+
+; look-up tables for rows of screen and color memory
+rowScreen_hi:
+    !for i, 0, 24 { !byte >(SCREEN_MEM + i*40) }
+rowColor_hi:
+    !for i, 0, 24 { !byte >(COLOR_MEM + i*40) }
+rowMap_hi:
+    !for i, 0, 24 { !byte >(MAP_MEM + i*40) }
+row_lo:
+    !for i, 0, 24 { !byte <(COLOR_MEM + i*40) }
 
 
 
 
+
+;----------------------------------------------------------------------------------------------------
+clearMap:
+    ldx #$00
+    lda #$20
+loop_clear:
+    sta MAP_MEM,x
+    sta MAP_MEM+$100,x
+    sta MAP_MEM+$200,x
+    sta MAP_MEM+$2e8,x
+    inx
+    bne loop_clear
+
+    rts
+
+;----------------------------------------------------------------------------------------------------
 drawRoom:
-    ; calc width
-        lda brx_var
-        sec
-        sbc tlx_var
-        sta width_var
+    lda brx_var             ; calculating width
+    sec
+    sbc tlx_var
+    sta width_var
 
-        ldx tly_var
+    ldx tly_var             ; starting row -> x reg
 
-    ; first horizontal walls
-        lda screen_lo,x
-        clc
-        adc tlx_var
-        sta screenPointer
-        lda screen_hi,x
-        adc #$00
-        sta screenPointer+1
+    lda row_lo,x            ; drawing first (top) horizontal walls
+    clc
+    adc tlx_var
+    sta mapPointer
+    lda rowMap_hi,x
+    adc #$00
+    sta mapPointer+1
 
-        ldy #$00
-        lda #$70                ; upper-left corner
-        sta (screenPointer),y
+    ldy #$00
+    lda #$70                ; upper-left corner char
+    sta (mapPointer),y
 
-        iny
-        lda #$43                ; horizontal wall (-)
-loop_firstCharColumn:
-        sta (screenPointer),y
-        iny
-        cpy width_var
-        bne loop_firstCharColumn
+    iny
+    lda #$43                ; horizontal wall char
+loop_firstDrawColumn:
+    sta (mapPointer),y
+    iny
+    cpy width_var
+    bne loop_firstDrawColumn
 
-        lda #$6e                ; upper-right corner
-        sta (screenPointer),y
+    lda #$6e                ; upper-right corner char
+    sta (mapPointer),y
 
-        inx
-loop_charRow:
-    ; set screen pointer to row + x
-        lda screen_lo,x
-        clc
-        adc tlx_var
-        sta screenPointer
-        lda screen_hi,x
-        adc #$00
-        sta screenPointer+1
+    inx
+loop_drawRow:
+    lda row_lo,x
+    clc
+    adc tlx_var
+    sta mapPointer
+    lda rowMap_hi,x
+    adc #$00
+    sta mapPointer+1
 
-    ; inner rows
-        ldy #$00
-        lda #$42                ; first vertical wall (|)
-        sta (screenPointer),y
-        iny
-        lda #$2e                ; room floor (.)
-loop_charColumn:
-        sta (screenPointer),y
-        iny
-        cpy width_var
-        bne loop_charColumn
-        lda #$42                ; last vertical wall (|)
-        sta (screenPointer),y
+    ldy #$00                ; inner rows
+    lda #$42                ; first vertical wall char
+    sta (mapPointer),y
+    iny
+    lda #$2e                ; room floor char (.)
+loop_drawColumn:
+    sta (mapPointer),y
+    iny
+    cpy width_var
+    bne loop_drawColumn
+    lda #$42                ; last vertical wall char
+    sta (mapPointer),y
 
-        inx
-        cpx bry_var
-        bne loop_charRow
+    inx
+    cpx bry_var
+    bne loop_drawRow
 
-    ; last horizontal walls
-        lda screen_lo,x
-        clc
-        adc tlx_var
-        sta screenPointer
-        lda screen_hi,x
-        adc #$00
-        sta screenPointer+1
+    lda row_lo,x            ; drawing last (bottom) horizontal walls
+    clc
+    adc tlx_var
+    sta mapPointer
+    lda rowMap_hi,x
+    adc #$00
+    sta mapPointer+1
 
-        ldy #$00
-        lda #$6d                ; bottom-left corner
-        sta (screenPointer),y
+    ldy #$00
+    lda #$6d                ; bottom-left corner char
+    sta (mapPointer),y
 
-        iny
-        lda #$43                ; horizontal wall (-)
-loop_lastCharColumn:
-        sta (screenPointer),y
-        iny
-        cpy width_var
-        bne loop_lastCharColumn
+    iny
+    lda #$43                ; horizontal wall char
+loop_lastDrawColumn:
+    sta (mapPointer),y
+    iny
+    cpy width_var
+    bne loop_lastDrawColumn
 
-        lda #$7d                ; bottom-right corner
-        sta (screenPointer),y
-
-        rts
-
-screen_lo:
-        !for i, 0, 24 { !byte <(SCREEN_MEM + i*40) }
-screen_hi:
-        !for i, 0, 24 { !byte >(SCREEN_MEM + i*40) }
+    lda #$7d                ; bottom-right corner char
+    sta (mapPointer),y
+    rts
 
 
 
 
 
-fillColor:
-    ; calc width
-        lda brx_var
-        sec
-        sbc tlx_var
-        clc
-        adc #$01
-        sta width_var
-    ; set last row
-        lda bry_var
-        sta bry_p1
-        inc bry_p1
+;----------------------------------------------------------------------------------------------------
+lightUp_room:
+    lda brx_var             ; calculate width
+    sec
+    sbc tlx_var
+    clc
+    adc #$01
+    sta width_var
 
-        ldx tly_var
-loop_colorRow:
-    ; set color pointer to row + x
-        lda color_lo,x
-        clc
-        adc tlx_var
-        sta colorPointer
-        lda color_hi,x
-        adc #$00
-        sta colorPointer+1
+    lda bry_var             ; setting last row + 1
+    sta bry_final
+    inc bry_final
 
-        ldy #$00
-        lda col_var
-loop_colorColumn:
-        sta (colorPointer),y
-        iny
-        cpy width_var
-        bne loop_colorColumn
+    ldx tly_var
+loop_showRow:
+    lda row_lo,x
+    clc
+    adc tlx_var
+    sta mapPointer
+    lda rowMap_hi,x
+    adc #$00
+    sta mapPointer+1
 
-        inx
-        cpx bry_p1
-        bne loop_colorRow
-        rts
+    lda row_lo,x
+    clc
+    adc tlx_var
+    sta screenPointer
+    lda rowScreen_hi,x
+    adc #$00
+    sta screenPointer+1
 
-color_lo:
-        !for i, 0, 24 { !byte <(COLOR_MEM + i*40) }
-color_hi:
-        !for i, 0, 24 { !byte >(COLOR_MEM + i*40) }
+    ldy #$00
+loop_showColumn:
+    lda (mapPointer),y
+    sta (screenPointer),y
+    iny
+    cpy width_var
+    bne loop_showColumn
+
+    inx
+    cpx bry_final
+    bne loop_showRow
+    rts
 
 
 
 
 
+;----------------------------------------------------------------------------------------------------
 lightUp_corridor:
-        lda plx_var
-        sta x_var
-        dec x_var
+    lda plx_var
+    sta x_var
+    dec x_var
 
-        lda ply_var
-        sta y_var
-        dec y_var
+    lda ply_var
+    sta y_var
+    dec y_var
 
-        lda ply_var
-        sta y_p1
-        inc y_p1
-        inc y_p1
+    lda ply_var
+    sta y_final
+    inc y_final
+    inc y_final
 
-        ldx y_var
+    ldx y_var
 loop_lightUpCorridorRow:
-        lda screen_lo,x
-        clc
-        adc x_var
-        sta screenPointer
-        lda screen_hi,x
-        adc #$00
-        sta screenPointer+1
+    lda row_lo,x
+    clc
+    adc x_var
+    sta mapPointer
+    lda rowMap_hi,x
+    adc #$00
+    sta mapPointer+1
 
-        lda color_lo,x
-        clc
-        adc x_var
-        sta colorPointer
-        lda color_hi,x
-        adc #$00
-        sta colorPointer+1
+    lda row_lo,x
+    clc
+    adc x_var
+    sta screenPointer
+    lda rowScreen_hi,x
+    adc #$00
+    sta screenPointer+1
 
-        ldy #$00
+    ldy #$00
 loop_lightUpCorridorColumn:
-        lda (screenPointer),y
-        cmp #$23                ; corridor (#)
-        beq lightUpCorridorPos
-        cmp #$2b                ; door (+)
-        bne next_lightUpCorridorPos
+    lda (mapPointer),y
+    cmp #$23                ; corridor (#)
+    beq lightUpCorridorPos
+    cmp #$2b                ; door (+)
+    bne next_lightUpCorridorPos
 
 lightUpCorridorPos:
-        lda #$01                ; white
-        sta (colorPointer),y
+    sta (screenPointer),y
 
 next_lightUpCorridorPos:
-        iny
-        cpy #$03
-        bne loop_lightUpCorridorColumn
+    iny
+    cpy #$03
+    bne loop_lightUpCorridorColumn
 
-        inx
-        cpx y_p1
-        bne loop_lightUpCorridorRow
-        rts
-
-
+    inx
+    cpx y_final
+    bne loop_lightUpCorridorRow
+    rts
 
 
 
+
+
+;----------------------------------------------------------------------------------------------------
 lightUp_playerArea:
-        lda plx_var
-        sta x_var
-        dec x_var
+    lda plx_var
+    sta x_var
+    dec x_var
 
-        lda ply_var
-        sta y_var
-        dec y_var
+    lda ply_var
+    sta y_var
+    dec y_var
 
-        lda ply_var
-        sta y_p1
-        inc y_p1
-        inc y_p1
+    lda ply_var
+    sta y_final
+    inc y_final
+    inc y_final
 
-        ldx y_var
+    ldx y_var
 loop_lightUpPlayerAreaRow:
-        lda screen_lo,x
-        clc
-        adc x_var
-        sta screenPointer
-        lda screen_hi,x
-        adc #$00
-        sta screenPointer+1
+    lda row_lo,x
+    clc
+    adc x_var
+    sta mapPointer
+    lda rowMap_hi,x
+    adc #$00
+    sta mapPointer+1
 
-        lda color_lo,x
-        clc
-        adc x_var
-        sta colorPointer
-        lda color_hi,x
-        adc #$00
-        sta colorPointer+1
+    lda row_lo,x
+    clc
+    adc x_var
+    sta screenPointer
+    lda rowScreen_hi,x
+    adc #$00
+    sta screenPointer+1
 
-        ldy #$00
-        lda #$01                ; white
+    ldy #$00
 loop_lightUpPlayerAreaColumn:
-        sta (colorPointer),y
-        iny
-        cpy #$03
-        bne loop_lightUpPlayerAreaColumn
+    lda (mapPointer),y
+    sta (screenPointer),y
+    iny
+    cpy #$03
+    bne loop_lightUpPlayerAreaColumn
 
-        inx
-        cpx y_p1
-        bne loop_lightUpPlayerAreaRow
-        rts
+    inx
+    cpx y_final
+    bne loop_lightUpPlayerAreaRow
+    rts
