@@ -19,47 +19,17 @@ init:
 
 
 reset_new_level:
+    print "{clr}"
     seed=-int(rnd(0)*32768)-1:rem random seed
     rem seed=-15233
     r=rnd(seed):rem initialize random number generator
 
-    reset_flags:
-        for i=0 to 8
-            rf(i)=2
-            if rnd(1)<0.5 then rf(i)=0:rem room has no light
-        next i
+    gosub reset_flags
+    gosub create_map
+    gosub draw_map
+    gosub add_staircase
 
-        nr=int(rnd(1)*4):rem number of rooms to remove (0-3)
-        if nr=0 then set_level
-        for i=1 to nr
-            r=int(rnd(1)*9)
-            select_room:
-            if (rf(r) and 1)=0 then select_room_done
-            r=r+1:if r>8 then n=0
-            goto select_room
-            select_room_done:
-            rf(r)=rf(r) or 1
-        next i
-
-    set_level:
-        print "{clr}"
-        gosub create_map
-
-        print "{clr}"
-
-        create_next_level_passage:
-            r=int(rnd(1)*9):rem room of passage to next level
-
-            check_phantom_room:
-                if (rf(r) and 1)=0 then set_next_level_passage
-                r=r+1:if r>8 then r=0
-                goto check_phantom_room
-
-            set_next_level_passage:
-                nx=rm(r,tl,x)+1+int(rnd(1)*(rm(r,br,x)-rm(r,tl,x)-2))
-                ny=rm(r,tl,y)+1+int(rnd(1)*(rm(r,br,y)-rm(r,tl,y)-2))
-                poke MAP_MEM+nx+ny*40,staircase_char
-
+    print "{clr}"
     rem sys showFullMap
 
     set_player:
@@ -190,9 +160,32 @@ light_on_player_area:
 
 
 
+reset_flags:
+    print " reset flags..."
+
+    for i=0 to 8
+        rf(i)=2
+        if rnd(1)<0.5 then rf(i)=0:rem room has no light
+    next i
+
+    nr=int(rnd(1)*4):rem number of rooms to remove (0-3)
+    if nr=0 then return
+
+    for i=1 to nr
+        r=int(rnd(1)*9)
+        select_room:
+        if (rf(r) and 1)=0 then select_room_done
+        r=r+1:if r>8 then r=0
+        goto select_room
+        select_room_done:
+        rf(r)=rf(r) or 1
+    next i
+    return
+
+
 
 create_map:
-    print " create map..."
+    print "{down} create map..."
 
     create_sectors:
         print "   create sectors..."
@@ -284,6 +277,9 @@ create_map:
 
                 connection_done:
             next i
+    return
+
+
 
 draw_map:
     print "{down} draw map..."
@@ -398,3 +394,20 @@ draw_map:
                     p=ax+j*40:poke MAP_MEM+p,corridor_char
                 next j
                 return
+
+
+add_staircase:
+    print "{down} add staircase..."
+    r=int(rnd(1)*9):rem room of passage to next level
+
+    check_phantom_room:
+        if (rf(r) and 1)=0 then set_next_level_passage
+        r=r+1:if r>8 then r=0
+        goto check_phantom_room
+
+    set_next_level_passage:
+        nx=rm(r,tl,x)+1+int(rnd(1)*(rm(r,br,x)-rm(r,tl,x)-2))
+        ny=rm(r,tl,y)+1+int(rnd(1)*(rm(r,br,y)-rm(r,tl,y)-2))
+        poke MAP_MEM+nx+ny*40,staircase_char
+
+    return
