@@ -5,99 +5,154 @@ init:
     tl=0:br=1:x=0:y=1:rem for readability
 
     dim rm(8,1,1):rem rooms in the nine (3x3) sectors
-    dim rf(8):rem flags 0-phantom room, 1-has light, 4-lighted up already
+    dim rf(8):rem flags
+        rem bit.0 -phantom room
+        rem bit 1 -has its own light
+        rem bit 2 -lighted up already
 
-    dim cn(8),vs(8),al(8),ct(3):rem temporary arrays for room connections
+    dim cn(8),cv(8),ca(8),ct(3):rem temporary arrays for room connections
 
     poke 650,128:rem drag keypress (128-enable, 0-disable)
-    poke 53280,0:poke 53281,0
+
+    rem poke 53280,0:poke 53281,0:rem background and border colors
+
+
 
 reset_new_level:
     seed=-int(rnd(0)*32768)-1:rem random seed
-    rem seed=-25729
+    rem seed=-15233
     r=rnd(seed):rem initialize random number generator
 
-    rem *** reset rooms' flags ***
-    for i=0 to 8
-        rf(i)=2
-        if rnd(1)<0.5 then rf(i)=0:rem room has no own light
-    next i
-    nr=int(rnd(1)*4):rem number of rooms to remove (0-3)
-    if nr=0 then set_level
-    for i=1 to nr
-        select_room:
-        r=int(rnd(1)*9)
-        if (rf(r) and 1)=1 then select_room
-        rf(r)=rf(r) or 1
-    next i
+    reset_flags:
+        for i=0 to 8
+            rf(i)=2
+            if rnd(1)<0.5 then rf(i)=0:rem room has no light
+        next i
+
+        nr=int(rnd(1)*4):rem number of rooms to remove (0-3)
+        if nr=0 then set_level
+        for i=1 to nr
+            r=int(rnd(1)*9)
+            select_room:
+            if (rf(r) and 1)=0 then select_room_done
+            r=r+1:if r>8 then n=0
+            goto select_room
+            select_room_done:
+            rf(r)=rf(r) or 1
+        next i
 
     set_level:
-    print "{dark gray}{clr}create map..."
-    gosub create_map
-    gosub draw_map
-    print "{light gray}{clr}"
+        print "{clr}{down} create map..."
+        gosub create_map
 
-    n=int(rnd(1)*9):rem room of passage to next level
+        print "{clr}"
 
-    check_phantom_room:
-    if (rf(n) and 1)=0 then set_next_level_passage:rem not a phantom room
-    n=n+1:if n>8 then n=0
-    goto check_phantom_room
+        create_next_level_passage:
+            r=int(rnd(1)*9):rem room of passage to next level
 
-    set_next_level_passage:
-    nx=rm(n,tl,x)+1+int(rnd(1)*(rm(n,br,x)-rm(n,tl,x)-2))
-    ny=rm(n,tl,y)+1+int(rnd(1)*(rm(n,br,y)-rm(n,tl,y)-2))
-    poke MAP_MEM+nx+ny*40,37
+            check_phantom_room:
+                if (rf(r) and 1)=0 then set_next_level_passage
+                r=r+1:if r>8 then r=0
+                goto check_phantom_room
 
-    rem *** set player ***
-    cr=int(rnd(1)*9):rem starting room
+            set_next_level_passage:
+                nx=rm(r,tl,x)+1+int(rnd(1)*(rm(r,br,x)-rm(r,tl,x)-2))
+                ny=rm(r,tl,y)+1+int(rnd(1)*(rm(r,br,y)-rm(r,tl,y)-2))
+                poke MAP_MEM+nx+ny*40,staircase_char
 
-    check_starting_room:
-    if (rf(cr) and 1)=0 then set_player_position:rem not a phantom room
-    cr=cr+1:if cr>8 then cr=0
-    goto check_starting_room
+    rem sys showFullMap
 
-    set_player_position:
-    px=rm(cr,tl,x)+1+int(rnd(1)*(rm(cr,br,x)-rm(cr,tl,x)-2))
-    py=rm(cr,tl,y)+1+int(rnd(1)*(rm(cr,br,y)-rm(cr,tl,y)-2))
-    gosub light_up_room
+    set_player:
+        cr=int(rnd(1)*9):rem starting room
+
+        check_starting_room:
+            if (rf(cr) and 1)=0 then set_player_position:rem not a phantom room
+            cr=cr+1:if cr>8 then cr=0
+            goto check_starting_room
+
+        set_player_position:
+            px=rm(cr,tl,x)+1+int(rnd(1)*(rm(cr,br,x)-rm(cr,tl,x)-2))
+            py=rm(cr,tl,y)+1+int(rnd(1)*(rm(cr,br,y)-rm(cr,tl,y)-2))
+            p=px+py*40
+            np=peek(MAP_MEM+p):rem new position background
+
+            if (rf(cr) and 6)=0 then gosub light_on_player_area:goto draw_player
+            gosub light_on_room
+
+
 
 draw_player:
-    p=px+py*40
-
-    bg=peek(MAP_MEM+p):rem store char under the player
-    if bg=35 or bg=43 then gosub light_up_corridor
-    if bg=43 then gosub get_player_room:gosub light_up_room
-    if bg<>35 and (rf(cr) and 16)=0 then gosub light_up_player_area
-
-show_player:
-    poke SCREEN_MEM+p,0:rem poke 55296+p,1:rem draw player
+    bg=np
+    poke SCREEN_MEM+p,player_char
 
 player_control:
     get a$
-    if a$="w" or a$="{up}" then dx=0:dy=-1:goto check_collision:rem up
-    if a$="d" or a$="{right}" then dx=1:dy=0:goto check_collision:rem right
-    if a$="s" or a$="{down}" then dx=0:dy=1:goto check_collision:rem down
-    if a$="a" or a$="{left}" then dx=-1:dy=0:goto check_collision:rem left
+    if a$="w" or a$="{up}" then dx=0:dy=-1:d=-40:goto check_collision
+    if a$="d" or a$="{right}" then dx=1:dy=0:d=1:goto check_collision
+    if a$="s" or a$="{down}" then dx=0:dy=1:d=40:goto check_collision
+    if a$="a" or a$="{left}" then dx=-1:dy=0:d=-1:goto check_collision
     if a$=chr$(13) then make_actions
     goto player_control
 
     check_collision:
-    c=peek(MAP_MEM+p+dx+dy*40)
-    if c=46 then move_player:rem floor
-    if c=35 then move_player:rem corridor
-    if c=43 then move_player:rem door
-    if c=37 then move_player:rem stairs to prev or next level
-    goto player_control:rem colliding, no move
+        np=peek(MAP_MEM+p+d):rem next position
+        if np<>corridor_char and np<>door_char and np<>floor_char and np<>staircase_char then player_control
 
-    move_player:
-    rem poke MAP_MEM+p,bg:rem draw back char under the player
-    px=px+dx:py=py+dy
-    goto draw_player
+        move_player:
+            if bg=corridor_char and (np=corridor_char) then move_to_corridor
+            if bg=corridor_char and (np=door_char) then move_from_corridor_to_door
+            if (bg=floor_char or bg=staircase_char) and (np=floor_char or np=door_char or np=staircase_char) then move_inside_room
+            if bg=door_char and np=corridor_char then move_from_door_to_corridor
+
+            move_from_corridor_to_door:
+                gosub step_player
+                gosub get_player_room
+                if (rf(cr) and 2)=0 then move_from_corridor_to_door_with_no_light
+                poke SCREEN_MEM+p-d,bg
+                if (rf(cr) and 4)=0 then gosub light_on_room
+                goto draw_player
+
+                move_from_corridor_to_door_with_no_light:
+                    gosub light_on_player_area
+                    goto draw_player
+
+            move_inside_room:
+                if (rf(cr) and 4)=0 then move_inside_room_with_no_light
+                poke SCREEN_MEM+p,bg
+                gosub step_player
+                goto draw_player
+
+                move_inside_room_with_no_light:
+                    gosub light_off_player_area
+                    gosub step_player
+                    gosub light_on_player_area
+                    goto draw_player
+
+            move_from_door_to_corridor:
+                if (rf(cr) and 4)=0 then gosub light_off_player_area
+
+            move_to_corridor:
+                gosub step_player
+                gosub light_on_corridor
+                goto draw_player
 
     make_actions:
-    if bg=37 then reset_new_level
-    goto player_control
+        if bg=staircase_char then reset_new_level
+        goto player_control
+
+
+
+step_player:
+    px=px+dx
+    py=py+dy
+    p=p+d
+    return
+
+light_on_corridor:
+    poke plx_var,px
+    poke ply_var,py
+    sys lightOn_corridor
+    return
 
 get_player_room:
     if py<y1 then cr=0:goto check_sector_column
@@ -110,60 +165,34 @@ get_player_room:
     cr=cr+2
     return
 
-light_up_player_area:
-    poke plx_var,px
-    poke ply_var,py
-    sys lightUp_playerArea
-
-    rem poke 55296+p-41,1
-    rem poke 55296+p-40,1
-    rem poke 55296+p-39,1
-    rem poke 55296+p-1, 1
-    rem poke 55296+p+1, 1
-    rem poke 55296+p+39,1
-    rem poke 55296+p+40,1
-    rem poke 55296+p+41,1
-    return
-
-light_up_corridor:
-    poke plx_var,px
-    poke ply_var,py
-    sys lightUp_corridor
-
-    rem c=peek(1024+p-41):if c=35 or c=43 then poke 55296+p-41,1
-    rem c=peek(1024+p-40):if c=35 or c=43 then poke 55296+p-40,1
-    rem c=peek(1024+p-39):if c=35 or c=43 then poke 55296+p-39,1
-    rem c=peek(1024+p-1) :if c=35 or c=43 then poke 55296+p-1, 1
-    rem c=peek(1024+p+1) :if c=35 or c=43 then poke 55296+p+1, 1
-    rem c=peek(1024+p+39):if c=35 or c=43 then poke 55296+p+39,1
-    rem c=peek(1024+p+40):if c=35 or c=43 then poke 55296+p+40,1
-    rem c=peek(1024+p+41):if c=35 or c=43 then poke 55296+p+41,1
-    return
-
-light_up_room:
-    if (rf(cr) and 2)=0 then return:rem no light
+light_on_room:
     poke tlx_var,rm(cr,tl,x)
     poke tly_var,rm(cr,tl,y)
     poke brx_var,rm(cr,br,x)
     poke bry_var,rm(cr,br,y)
     poke col_var,1
-    sys lightUp_room
-
-    rem if (rf(cr) and 16)<>0 then return:rem light is already on
-    rem for i=rm(cr,tl,x) to rm(cr,br,x)
-    rem     for j=rm(cr,tl,y) to rm(cr,br,y)
-    rem         poke 55296+i+j*40,1
-    rem     next j
-    rem next i
-    rem rf(cr)=rf(cr) or 16:rem light is on
-
+    sys lightOn_room
+    rf(cr)=rf(cr) or 4:rem set room as lightened
     return
+
+light_off_player_area:
+    poke plx_var,px
+    poke ply_var,py
+    sys lightOff_playerArea
+    return
+
+light_on_player_area:
+    poke plx_var,px
+    poke ply_var,py
+    sys lightOn_playerArea
+    return
+
+
 
 
 
 create_map:
     rem *** create sectors ***
-
     x0=0
     y0=0
     x1=13
@@ -172,16 +201,6 @@ create_map:
     y2=16
     x3=39
     y3=24
-
-    rem gs=5:rem minimum sector size (inner space)
-    rem xs=x0+gs+1:xe=x3-gs*3-1
-    rem x1=xs+int(rnd(1)*(xe-xs)):rem second sector column
-    rem ys=y0+gs+1:ye=y3-gs*3-1
-    rem y1=ys+int(rnd(1)*(ye-ys)):rem second sector row
-    rem xs=x1+gs+1:xe=x3-gs
-    rem x2=xs+int(rnd(1)*(xe-xs)):rem third sector column
-    rem ys=y1+gs+1:ye=y3-gs
-    rem y2=ys+int(rnd(1)*(ye-ys)):rem third sector row
 
     rem *** create rooms in sectors ***
     rm(0,tl,x)=x0+1:rm(0,br,x)=x1-1:rm(0,tl,y)=y0+1:rm(0,br,y)=y1-1
@@ -215,21 +234,21 @@ create_map:
     next i
 
     rem *** set room connections ***
-    for i=0 to 8:cn(i)=0:vs(i)=0:next i:rem reset connection flags
+    for i=0 to 8:cn(i)=0:cv(i)=0:next i:rem reset connection flags
     a=int(rnd(1)*9):rem select random starting room
-    vs(a)=1:al(0)=a:rem mark starting room as connected and add to list
+    cv(a)=1:ca(0)=a:rem mark starting room as connected and add to list
 
     for n=1 to 8
         an=int(rnd(1)*n):rem select random connected room
 
         get_room:
-        a=al(an)
+        a=ca(an)
         m=a-int(a/3)*3:rem determine column of room (0,1,2)
         s=0:rem avialable connections counter
-        if m>0 then if vs(a-1)=0 then ct(s)=a-1:s=s+1:rem possible to left connection
-        if m<2 then if vs(a+1)=0 then ct(s)=a+1:s=s+1:rem possible to right connection
-        if a>2 then if vs(a-3)=0 then ct(s)=a-3:s=s+1:rem possible to up connection
-        if a<6 then if vs(a+3)=0 then ct(s)=a+3:s=s+1:rem possible to down connection
+        if m>0 then if cv(a-1)=0 then ct(s)=a-1:s=s+1:rem possible to left connection
+        if m<2 then if cv(a+1)=0 then ct(s)=a+1:s=s+1:rem possible to right connection
+        if a>2 then if cv(a-3)=0 then ct(s)=a-3:s=s+1:rem possible to up connection
+        if a<6 then if cv(a+3)=0 then ct(s)=a+3:s=s+1:rem possible to down connection
 
         if s>0 then select_connection
         an=an+1:if an=n then an=0:rem no available direction, select next room
@@ -241,7 +260,7 @@ create_map:
         if b=a+1 then cn(a)=cn(a)+2:rem cn(b)=cn(b)+8:rem b is right
         if b=a+3 then cn(a)=cn(a)+4:rem cn(b)=cn(b)+1:rem b is down
         if b=a-1 then cn(b)=cn(b)+2:rem cn(a)=cn(a)+8:rem b is left
-        vs(b)=1:al(n)=b:rem mark new room as connected and add to list
+        cv(b)=1:ca(n)=b:rem mark new room as connected and add to list
     next n
 
     rem add more (0-3) connection
@@ -258,17 +277,15 @@ create_map:
 
         connection_done:
     next i
-    return
 
 
 
-draw_map:
     sys clearMap
 
 draw_rooms:
     for i=0 to 8
         rem check phantom rooms
-        if (rf(i) and 1)=1 then poke MAP_MEM+rm(i,tl,x)+rm(i,tl,y)*40,35:goto room_drawing_done
+        if (rf(i) and 1)=1 then poke MAP_MEM+rm(i,tl,x)+rm(i,tl,y)*40,corridor_char:goto room_drawing_done
 
         poke tlx_var,rm(i,tl,x)
         poke tly_var,rm(i,tl,y)
@@ -276,33 +293,17 @@ draw_rooms:
         poke bry_var,rm(i,br,y)
         sys drawRoom
 
-        rem rem horizontal walls
-        rem a0=rm(i,tl,y)*40:a1=rm(i,br,y)*40
-        rem for j=rm(i,tl,x)+1 to rm(i,br,x)-1
-        rem     poke MAP_MEM+j+a0,67
-        rem     poke MAP_MEM+j+a1,67
-        rem next j
-        rem poke MAP_MEM+rm(i,tl,x)+a0,112
-        rem poke MAP_MEM+rm(i,br,x)+a0,110
-        rem rem vertical walls
-        rem for j=rm(i,tl,y)+1 to rm(i,br,y)-1
-        rem     a0=rm(i,tl,x)+j*40:a1=rm(i,br,x)+j*40
-        rem     poke MAP_MEM+a0,66
-        rem     poke MAP_MEM+a1,66
-        rem     for k=a0+1 to a1-1:poke MAP_MEM+k,46:next k:rem floor
-        rem next j
-        rem poke MAP_MEM+rm(i,tl,x)+rm(i,br,y)*40,109
-        rem poke MAP_MEM+rm(i,br,x)+rm(i,br,y)*40,125
-
         room_drawing_done:
     next i
+
+
 
 draw_corridors:
     for a=0 to 8
         rem if (cn(a) and 1)<>0 then b=a-3:gosub ...:rem open up
         if (cn(a) and 2)<>0 then b=a+1:gosub horizontal_corridor
         if (cn(a) and 4)<>0 then b=a+3:gosub vertical_corridor
-        rem if (cn(a) and 8))<>0 then b=a-1:gosub ...:rem open left
+        rem if (cn(a) and 8)<>0 then b=a-1:gosub ...:rem open left
     next a
     return
 
@@ -311,14 +312,14 @@ draw_corridors:
         ax=rm(a,br,x)
         dy=rm(a,br,y)-rm(a,tl,y)-2
         ay=rm(a,tl,y)+1+int(rnd(1)*dy)
-        a0=ax+ay*40:poke MAP_MEM+a0,43:rem door
+        a0=ax+ay*40:poke MAP_MEM+a0,door_char:rem door
 
         set_horizontal_b_room:
         if (rf(b) and 1)=1 then bx=rm(b,tl,x):by=rm(b,tl,y):goto draw_horizontal_corridor
         bx=rm(b,tl,x)
         dy=rm(b,br,y)-rm(b,tl,y)-2
         by=rm(b,tl,y)+1+int(rnd(1)*dy)
-        a0=bx+by*40:poke MAP_MEM+a0,43:rem door
+        a0=bx+by*40:poke MAP_MEM+a0,door_char:rem door
 
         draw_horizontal_corridor:
         if ay=by then draw_straight_horizontal_corridor
@@ -326,22 +327,22 @@ draw_corridors:
         draw_zshaped_horizontal_corridor:
             mx=ax+1+int(rnd(1)*(bx-ax-2))
             for j=ax+1 to mx
-                a0=j+ay*40:poke MAP_MEM+a0,35:rem corridor
+                a0=j+ay*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
             dy=sgn(by-ay)
             if ay+dy=by then no_horizontal_midpart
             for j=ay+dy to by-dy step dy
-                a0=mx+j*40:poke MAP_MEM+a0,35:rem corridor
+                a0=mx+j*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
             no_horizontal_midpart:
             for j=mx to bx-1
-                a0=j+by*40:poke MAP_MEM+a0,35:rem corridor
+                a0=j+by*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
             return
 
         draw_straight_horizontal_corridor:
             for j=ax+1 to bx-1
-                a0=j+ay*40:poke MAP_MEM+a0,35:rem corridor
+                a0=j+ay*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
             return
 
@@ -350,14 +351,14 @@ draw_corridors:
         ay=rm(a,br,y)
         dx=rm(a,br,x)-rm(a,tl,x)-2
         ax=rm(a,tl,x)+1+int(rnd(1)*dx)
-        a0=ax+ay*40:poke MAP_MEM+a0,43:rem door
+        a0=ax+ay*40:poke MAP_MEM+a0,door_char:rem door
 
         set_vertical_b_room:
         if (rf(b) and 1)=1 then bx=rm(b,tl,x):by=rm(b,tl,y):goto draw_veretical_corridor
         by=rm(b,tl,y)
         dx=rm(b,br,x)-rm(b,tl,x)-2
         bx=rm(b,tl,x)+1+int(rnd(1)*dx)
-        a0=bx+by*40:poke MAP_MEM+a0,43:rem door
+        a0=bx+by*40:poke MAP_MEM+a0,door_char:rem door
 
         draw_veretical_corridor:
         if ax=bx then draw_straight_veretical_corridor
@@ -365,22 +366,22 @@ draw_corridors:
         draw_zshaped_veretical_corridor:
             my=ay+1+int(rnd(1)*(by-ay-2))
             for j=ay+1 to my
-                a0=ax+j*40:poke MAP_MEM+a0,35:rem corridor
+                a0=ax+j*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
             dx=sgn(bx-ax)
             if ax+dx=bx then no_vertical_midpart
             for j=ax+dx to bx-dx step dx
-                a0=j+my*40:poke MAP_MEM+a0,35:rem corridor
+                a0=j+my*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
 
             no_vertical_midpart:
             for j=my to by-1
-                a0=bx+j*40:poke MAP_MEM+a0,35:rem corridor
+                a0=bx+j*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
             return
 
         draw_straight_veretical_corridor:
             for j=ay+1 to by-1
-                a0=ax+j*40:poke MAP_MEM+a0,35:rem corridor
+                a0=ax+j*40:poke MAP_MEM+a0,corridor_char:rem corridor
             next j
             return

@@ -133,8 +133,14 @@ if (-not (Test-Path $BuildDir)) {
 # compiling asembly (ACME)
 & $AcmePath -f cbm --symbollist "$BuildDir/$AsmName.symbols.txt" -o "$BuildDir/$AsmName.prg" "$SrcDir/$AsmName.asm"
 
-# parse asm symbols: explicit `label = $hex` from source + code labels ($c000+) from symbollist
+# parse asm symbols: `label: !byte $hex` data constants (value) + `label = $hex` equates (address)
+# + remaining code labels ($c000+) from symbollist (address) for anything not already a data constant
 $asmSymbols = @{}
+Get-Content "$SrcDir/$AsmName.asm" | ForEach-Object {
+    if ($_ -match '^\s*(\w+):\s*!byte\s*\$([0-9a-fA-F]{1,2})\b') {
+        $asmSymbols[$Matches[1]] = [Convert]::ToInt32($Matches[2], 16)
+    }
+}
 Get-Content "$SrcDir/$AsmName.asm" | ForEach-Object {
     if ($_ -match '^\s*(\w+)\s*=\s*\$([0-9a-fA-F]+)') {
         $asmSymbols[$Matches[1]] = [Convert]::ToInt32($Matches[2], 16)
@@ -142,8 +148,9 @@ Get-Content "$SrcDir/$AsmName.asm" | ForEach-Object {
 }
 Get-Content "$BuildDir/$AsmName.symbols.txt" | ForEach-Object {
     if ($_ -match '^\s*(\w+)\s*=\s*\$([0-9a-fA-F]+)') {
+        $label = $Matches[1]
         $value = [Convert]::ToInt32($Matches[2], 16)
-        if ($value -ge 0xc000) { $asmSymbols[$Matches[1]] = $value }  # code region only
+        if ($value -ge 0xc000 -and -not $asmSymbols.ContainsKey($label)) { $asmSymbols[$label] = $value }  # code region only
     }
 }
 
@@ -151,21 +158,16 @@ Get-Content "$BuildDir/$AsmName.symbols.txt" | ForEach-Object {
 $basicInputPath = "$SrcDir/$BasicName.bas"
 $basicForPetcatPath = Convert-BasicLabelsToNumbered -InputPath $basicInputPath -OutputPath "$BuildDir/$BasicName.numbered.bas"
 
-# resolve asm symbols only in sys/poke/peek argument positions
+# resolve asm symbols/constants anywhere in the BASIC source (poke/peek/sys args, expressions, etc.)
 $basicContent = Get-Content $basicForPetcatPath
-$basicContent = $basicContent | ForEach-Object {
-    [regex]::Replace($_, '\b(sys|poke)\s+([A-Za-z_][A-Za-z0-9_]*)\b|\bpeek\(([A-Za-z_][A-Za-z0-9_]*)\b', {
-        param($m)
-        if ($m.Groups[3].Success) {
-            $label = $m.Groups[3].Value
-            if ($asmSymbols.ContainsKey($label)) { return "peek($($asmSymbols[$label])" }
-        } else {
-            $keyword = $m.Groups[1].Value
-            $label   = $m.Groups[2].Value
-            if ($asmSymbols.ContainsKey($label)) { return "$keyword $($asmSymbols[$label])" }
-        }
-        return $m.Value
-    })
+if ($asmSymbols.Count -gt 0) {
+    $symbolPattern = '\b(' + (($asmSymbols.Keys | Sort-Object Length -Descending | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')\b'
+    $basicContent = $basicContent | ForEach-Object {
+        [regex]::Replace($_, $symbolPattern, {
+            param($m)
+            return [string]$asmSymbols[$m.Value]
+        })
+    }
 }
 Set-Content $basicForPetcatPath $basicContent
 
