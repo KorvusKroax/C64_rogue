@@ -61,7 +61,8 @@ player_control:
     if a$="d" or a$="{right}" then dx=1:dy=0:d=1:goto check_collision
     if a$="s" or a$="{down}" then dx=0:dy=1:d=40:goto check_collision
     if a$="a" or a$="{left}" then dx=-1:dy=0:d=-1:goto check_collision
-    if a$=chr$(13) then make_actions
+    if a$=chr$(13) then make_actions:rem return key
+    if a$=chr$(32) then reset_new_level:rem space key
     goto player_control
 
     check_collision:
@@ -89,6 +90,7 @@ player_control:
             move_inside_room:
                 if (rf(cr) and 4)=0 then move_inside_room_with_no_light
                 poke SCREEN_MEM+p,bg
+                if np=door_char then move_to_corridor
                 gosub step_player
                 goto draw_player
 
@@ -130,17 +132,16 @@ get_player_room:
     cr=6
 
     check_sector_column:
-    if px<x1 then return
-    if px<x2 then cr=cr+1:return
-    cr=cr+2
-    return
+        if px<x1 then return
+        if px<x2 then cr=cr+1:return
+        cr=cr+2
+        return
 
 light_on_room:
     poke tlx_var,rm(cr,tl,x)
     poke tly_var,rm(cr,tl,y)
     poke brx_var,rm(cr,br,x)
     poke bry_var,rm(cr,br,y)
-    poke col_var,1
     sys lightOn_room
     rf(cr)=rf(cr) or 4:rem set room as lightened
     return
@@ -174,11 +175,11 @@ reset_flags:
     for i=1 to nr
         r=int(rnd(1)*9)
         select_room:
-        if (rf(r) and 1)=0 then select_room_done
-        r=r+1:if r>8 then r=0
-        goto select_room
+            if (rf(r) and 1)=0 then select_room_done
+            r=r+1:if r>8 then r=0
+            goto select_room
         select_room_done:
-        rf(r)=rf(r) or 1
+            rf(r)=rf(r) or 1
     next i
     return
 
@@ -214,7 +215,7 @@ create_map:
         print "   shrink rooms..."
         gr=2:rem minimum inner gap between room walls
         for i=0 to 8
-            if (rf(i) and 1)=1 then shrink_done
+            if (rf(i) and 1)<>0 then shrink_done
             xs=rm(i,tl,x):ys=rm(i,tl,y)
             xe=rm(i,br,x):ye=rm(i,br,y)
 
@@ -241,25 +242,25 @@ create_map:
             an=int(rnd(1)*n):rem select random connected room
 
             get_room:
-            a=ca(an)
-            m=a-int(a/3)*3:rem determine column of room (0,1,2)
-            s=0:rem avialable connections counter
-            if m>0 then if cv(a-1)=0 then ct(s)=a-1:s=s+1:rem possible to left connection
-            if m<2 then if cv(a+1)=0 then ct(s)=a+1:s=s+1:rem possible to right connection
-            if a>2 then if cv(a-3)=0 then ct(s)=a-3:s=s+1:rem possible to up connection
-            if a<6 then if cv(a+3)=0 then ct(s)=a+3:s=s+1:rem possible to down connection
+                a=ca(an)
+                m=a-int(a/3)*3:rem determine column of room (0,1,2)
+                s=0:rem avialable connections counter
+                if m>0 then if cv(a-1)=0 then ct(s)=a-1:s=s+1:rem possible to left connection
+                if m<2 then if cv(a+1)=0 then ct(s)=a+1:s=s+1:rem possible to right connection
+                if a>2 then if cv(a-3)=0 then ct(s)=a-3:s=s+1:rem possible to up connection
+                if a<6 then if cv(a+3)=0 then ct(s)=a+3:s=s+1:rem possible to down connection
 
-            if s>0 then select_connection
-            an=an+1:if an=n then an=0:rem no available direction, select next room
-            goto get_room
+                if s>0 then select_connection
+                an=an+1:if an=n then an=0:rem no available direction, select next room
+                goto get_room
 
             select_connection:
-            b=ct(int(rnd(1)*s)):rem select random available connection
-            if b=a-3 then cn(b)=cn(b)+4:rem cn(a)=cn(a)+1:rem b is up
-            if b=a+1 then cn(a)=cn(a)+2:rem cn(b)=cn(b)+8:rem b is right
-            if b=a+3 then cn(a)=cn(a)+4:rem cn(b)=cn(b)+1:rem b is down
-            if b=a-1 then cn(b)=cn(b)+2:rem cn(a)=cn(a)+8:rem b is left
-            cv(b)=1:ca(n)=b:rem mark new room as connected and add to list
+                b=ct(int(rnd(1)*s)):rem select random available connection
+                if b=a-3 then cn(b)=cn(b)+4:rem cn(a)=cn(a)+1:rem b is up
+                if b=a+1 then cn(a)=cn(a)+2:rem cn(b)=cn(b)+8:rem b is right
+                if b=a+3 then cn(a)=cn(a)+4:rem cn(b)=cn(b)+1:rem b is down
+                if b=a-1 then cn(b)=cn(b)+2:rem cn(a)=cn(a)+8:rem b is left
+                cv(b)=1:ca(n)=b:rem mark new room as connected and add to list
         next n
 
         add_more_connections:
@@ -273,7 +274,7 @@ create_map:
                 goto connection_done
 
                 set_connection:
-                cn(a)=cn(a) or d
+                    cn(a)=cn(a) or d
 
                 connection_done:
             next i
@@ -288,14 +289,23 @@ draw_map:
     draw_rooms:
         print "   draw rooms..."
         for i=0 to 8
-            rem check phantom rooms
-            if (rf(i) and 1)=1 then poke MAP_MEM+rm(i,tl,x)+rm(i,tl,y)*40,corridor_char:goto room_drawing_done
+            if (rf(i) and 1)=0 then room_drawing:rem check phantom rooms
+            poke MAP_MEM+rm(i,tl,x)+rm(i,tl,y)*40,corridor_char
+            rem poke SCREEN_MEM+rm(i,tl,x)+rm(i,tl,y)*40,corridor_char
+            goto room_drawing_done
 
-            poke tlx_var,rm(i,tl,x)
-            poke tly_var,rm(i,tl,y)
-            poke brx_var,rm(i,br,x)
-            poke bry_var,rm(i,br,y)
-            sys drawRoom
+            room_drawing:
+                poke tlx_var,rm(i,tl,x)
+                poke tly_var,rm(i,tl,y)
+                poke brx_var,rm(i,br,x)
+                poke bry_var,rm(i,br,y)
+                sys draw_room
+
+                rem poke tlx_var,rm(i,tl,x)
+                rem poke tly_var,rm(i,tl,y)
+                rem poke brx_var,rm(i,br,x)
+                rem poke bry_var,rm(i,br,y)
+                rem sys draw_room_toScreen
 
             room_drawing_done:
         next i
@@ -311,89 +321,147 @@ draw_map:
         return
 
         horizontal_corridor:
-            print "     horizontal corridor..."
-            if (rf(a) and 1)=1 then ax=rm(a,tl,x):ay=rm(a,tl,y):goto set_horizontal_b_room
+            if (rf(a) and 1)<>0 then ax=rm(a,tl,x):ay=rm(a,tl,y):goto set_horizontal_b_room
             ax=rm(a,br,x)
             dy=rm(a,br,y)-rm(a,tl,y)-2
             ay=rm(a,tl,y)+1+int(rnd(1)*dy)
-            p=ax+ay*40:poke MAP_MEM+p,door_char
+            p=ax+ay*40
+            poke MAP_MEM+p,door_char
+            rem poke SCREEN_MEM+p,door_char
 
             set_horizontal_b_room:
-            if (rf(b) and 1)=1 then bx=rm(b,tl,x):by=rm(b,tl,y):goto draw_horizontal_corridor
-            bx=rm(b,tl,x)
-            dy=rm(b,br,y)-rm(b,tl,y)-2
-            by=rm(b,tl,y)+1+int(rnd(1)*dy)
-            p=bx+by*40:poke MAP_MEM+p,door_char
+                if (rf(b) and 1)<>0 then bx=rm(b,tl,x):by=rm(b,tl,y):goto draw_horizontal_corridor
+                bx=rm(b,tl,x)
+                dy=rm(b,br,y)-rm(b,tl,y)-2
+                by=rm(b,tl,y)+1+int(rnd(1)*dy)
+                p=bx+by*40
+                poke MAP_MEM+p,door_char
+                rem poke SCREEN_MEM+p,door_char
 
             draw_horizontal_corridor:
-            if ay=by then straight_horizontal_corridor
+                if ay=by then straight_horizontal_corridor
 
             zshaped_horizontal_corridor:
-                print "       z-shaped horizontal corridor..."
                 mx=ax+1+int(rnd(1)*(bx-ax-2))
-                for j=ax+1 to mx
-                    p=j+ay*40:poke MAP_MEM+p,corridor_char
-                next j
-                dy=sgn(by-ay)
-                if ay+dy=by then no_horizontal_midpart
-                for j=ay+dy to by-dy step dy
-                    p=mx+j*40:poke MAP_MEM+p,corridor_char
-                next j
-                no_horizontal_midpart:
-                for j=mx to bx-1
-                    p=j+by*40:poke MAP_MEM+p,corridor_char
-                next j
+
+                poke x_var,ax+1
+                poke y_var,ay
+                poke x2_var,bx-1
+                poke y2_var,by
+                poke mx_var,mx
+                sys draw_zShapedHorizontalCorridor
+
+                rem poke x_var,ax+1
+                rem poke y_var,ay
+                rem poke x2_var,bx-1
+                rem poke y2_var,by
+                rem poke mx_var,mx
+                rem sys draw_zShapedHorizontalCorridor_toScreen
+
+                rem for j=ax+1 to mx
+                rem     p=j+ay*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
+                rem for j=mx to bx-1
+                rem     p=j+by*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
+                rem if ay>by then ty=ay:ay=by:by=ty
+                rem if ay+1=by then return
+                rem for j=ay+1 to by-1
+                rem     p=mx+j*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
                 return
 
             straight_horizontal_corridor:
-                print "       straight horizontal corridor..."
-                for j=ax+1 to bx-1
-                    p=j+ay*40:poke MAP_MEM+p,corridor_char
-                next j
+                poke y_var,ay
+                poke x_var,ax+1
+                poke x2_var,bx-1
+                sys draw_straightHorizontalCorridor
+
+                rem poke y_var,ay
+                rem poke x_var,ax+1
+                rem poke x2_var,bx-1
+                rem sys draw_straightHorizontalCorridor_toScreen
+
+                rem for j=ax+1 to bx-1
+                rem     p=j+ay*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
                 return
 
         vertical_corridor:
-            print "     vertical corridor..."
-            if (rf(a) and 1)=1 then ax=rm(a,tl,x):ay=rm(a,tl,y):goto set_vertical_b_room
+            if (rf(a) and 1)<>0 then ax=rm(a,tl,x):ay=rm(a,tl,y):goto set_vertical_b_room
             ay=rm(a,br,y)
             dx=rm(a,br,x)-rm(a,tl,x)-2
             ax=rm(a,tl,x)+1+int(rnd(1)*dx)
-            p=ax+ay*40:poke MAP_MEM+p,door_char
+            p=ax+ay*40
+            poke MAP_MEM+p,door_char
+            rem poke SCREEN_MEM+p,door_char
 
             set_vertical_b_room:
-            if (rf(b) and 1)=1 then bx=rm(b,tl,x):by=rm(b,tl,y):goto draw_vertical_corridor
-            by=rm(b,tl,y)
-            dx=rm(b,br,x)-rm(b,tl,x)-2
-            bx=rm(b,tl,x)+1+int(rnd(1)*dx)
-            p=bx+by*40:poke MAP_MEM+p,door_char
+                if (rf(b) and 1)<>0 then bx=rm(b,tl,x):by=rm(b,tl,y):goto draw_vertical_corridor
+                by=rm(b,tl,y)
+                dx=rm(b,br,x)-rm(b,tl,x)-2
+                bx=rm(b,tl,x)+1+int(rnd(1)*dx)
+                p=bx+by*40
+                poke MAP_MEM+p,door_char
+                rem poke SCREEN_MEM+p,door_char
 
             draw_vertical_corridor:
-            if ax=bx then straight_vertical_corridor
+                if ax=bx then straight_vertical_corridor
 
             zshaped_vertical_corridor:
-                print "       z-shaped vertical corridor..."
                 my=ay+1+int(rnd(1)*(by-ay-2))
-                for j=ay+1 to my
-                    p=ax+j*40:poke MAP_MEM+p,corridor_char
-                next j
-                dx=sgn(bx-ax)
-                if ax+dx=bx then no_vertical_midpart
-                for j=ax+dx to bx-dx step dx
-                    p=j+my*40:poke MAP_MEM+p,corridor_char
-                next j
 
-                no_vertical_midpart:
-                for j=my to by-1
-                    p=bx+j*40:poke MAP_MEM+p,corridor_char
-                next j
+                poke x_var,ax
+                poke y_var,ay+1
+                poke x2_var,bx
+                poke y2_var,by-1
+                poke my_var,my
+                sys draw_zShapedVerticalCorridor
+
+                rem poke x_var,ax
+                rem poke y_var,ay+1
+                rem poke x2_var,bx
+                rem poke y2_var,by-1
+                rem poke my_var,my
+                rem sys draw_zShapedVerticalCorridor_toScreen
+
+                rem for j=ay+1 to my
+                rem     p=ax+j*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
+                rem for j=my to by-1
+                rem     p=bx+j*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
+                rem if ax>bx then tx=ax:ax=bx:bx=tx
+                rem if ax+1=bx then return
+                rem for j=ax+1 to bx-1
+                rem     p=j+my*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
                 return
 
             straight_vertical_corridor:
-                print "       straight vertical corridor..."
-                for j=ay+1 to by-1
-                    p=ax+j*40:poke MAP_MEM+p,corridor_char
-                next j
+                poke x_var,ax
+                poke y_var,ay+1
+                poke y2_var,by-1
+                sys draw_straightVerticalCorridor
+
+                rem poke x_var,ax
+                rem poke y_var,ay+1
+                rem poke y2_var,by-1
+                rem sys draw_straightVerticalCorridor_toScreen
+
+                rem for j=ay+1 to by-1
+                rem     p=ax+j*40
+                rem     poke MAP_MEM+p,corridor_char
+                rem next j
                 return
+
 
 
 add_staircase:
@@ -409,5 +477,6 @@ add_staircase:
         nx=rm(r,tl,x)+1+int(rnd(1)*(rm(r,br,x)-rm(r,tl,x)-2))
         ny=rm(r,tl,y)+1+int(rnd(1)*(rm(r,br,y)-rm(r,tl,y)-2))
         poke MAP_MEM+nx+ny*40,staircase_char
+        rem poke SCREEN_MEM+nx+ny*40,staircase_char
 
     return
