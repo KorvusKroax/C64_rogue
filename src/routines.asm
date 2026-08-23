@@ -36,21 +36,20 @@ rowMap_hi:
 
 
 
-player_char:    !byte $00   ; (@)
-
-corridor_char:  !byte $23   ; (#)
-staircase_char: !byte $25   ; (%)
-door_char:      !byte $2b   ; (+)
-floor_char:     !byte $2e   ; (.)
-
 vertical_wall_char:         !byte $42
 horizontal_wall_char:       !byte $43
 upper_left_corner_char:     !byte $70
 upper_right_corner_char:    !byte $6e
 bottom_left_corner_char:    !byte $6d
 bottom_right_corner_char:   !byte $7d
+floor_char:     !byte $2e   ; (.)
+staircase_char: !byte $25   ; (%)
+door_char:      !byte $2b   ; (+)
+corridor_char:  !byte $23   ; (#)
 
-checker_char:  !byte $66
+player_char:    !byte $00   ; (@)
+
+
 
 
 
