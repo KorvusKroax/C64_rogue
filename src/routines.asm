@@ -47,6 +47,8 @@ staircase_char: !byte $25   ; (%)
 door_char:      !byte $2b   ; (+)
 corridor_char:  !byte $23   ; (#)
 
+gold_char:      !byte $2a   ; (*)
+
 player_char:    !byte $00   ; (@)
 
 
