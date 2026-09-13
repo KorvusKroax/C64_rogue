@@ -16,7 +16,7 @@ init:
         rem bit.0 -phantom room (1)
         rem bit 1 -has its own light (2)
         rem bit 2 -lighted up already (4)
-        rem bit 3 - ... (8)
+        rem bit 3 - maze room (8)
         rem bit 4 - has connection to east (16)
         rem bit 5 - has connection to south (32)
         rem bit 6 - ... (64)
@@ -25,53 +25,47 @@ init:
     dim cp(3):rem possible connection directions flags from current room
     iw=2:rem minimum inner width of rooms (walls not included)
 
-    mc=0:rem monster count
-    dim mt(25):rem monsters' types (means char as: a, b, c, d, etc.)
-    dim mp(25,1):rem monsters' positions (x,y)
-    dim mb(25):rem monsters' background char
 
     lv=1:rem current level
     pr=-1:rem player's room
     py=0:px=0:rem player's position
     pb=-1:rem player's background
-    pg=0:rem player's gold
 
 
 
     r=rnd(-ti):rem initialize random number generator
     poke 650,128:rem drag keypress (128-enable, 0-disable)
-    poke 53280,0:poke 53281,0:rem background and border colors
+
+    rem poke 53280,0:poke 53281,0:poke 646,15:rem border, background and text colors
 
 
 
 reset_new_level:
-    print "{clr}{light gray}"
+    print "{clr}"
     seed=-int(rnd(0)*32768)-1:rem random seed
-    rem seed=-16641
+    rem seed=-30849
     r=rnd(seed):rem initialize random number generator
 
     gosub reset_flags
     gosub create_map
     gosub draw_map
     gosub add_staircase
-    gosub add_initial_monsters
-    gosub add_treasures
 
     print "{clr}"
 
 
 
-    sys showFullMap
+    rem sys showFullMap
 
 
 
     set_player:
         pr=int(rnd(1)*9):rem starting room
 
-        check_phantom_room_for_starting_room:
-            if (rf(pr) and 1)=0 then set_player_position
+        check_normal_room_for_starting_room:
+            if (rf(pr) and 9)=0 then set_player_position: rem 1+8=phantom+maze
             pr=pr+1:if pr>8 then pr=0
-            goto check_phantom_room_for_starting_room
+            goto check_normal_room_for_starting_room
 
         set_player_position:
             px=rm(pr,tl,x)+1+int(rnd(1)*(rm(pr,br,x)-rm(pr,tl,x)-2))
@@ -91,13 +85,8 @@ draw_player:
     poke SCREEN_MEM+p,player_char
 
 draw_hud:
-    if msg$="---" then print"{home}                                        ":msg$=""
-    if msg$<>"" then print "{home}"msg$:msg$="---"
-
     print "{home}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}";
     print spc(0)"level:"lv;
-    print "{home}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}";
-    print spc(11)"gold:"pg;
 
 player_control:
     get a$
@@ -106,7 +95,7 @@ player_control:
     if a$="s" or a$="{down}" then dx=0:dy=1:d=40:goto check_collision
     if a$="a" or a$="{left}" then dx=-1:dy=0:d=-1:goto check_collision
     if a$=chr$(13) then make_actions:rem return key
-    if a$=chr$(32) then reset_new_level:rem space key
+    if a$=chr$(32) then going_to_next_level:rem space key
     goto player_control
 
 
@@ -161,7 +150,6 @@ player_control:
 
     make_actions:
         if pb=staircase_char then going_to_next_level
-        if pb=gold_char then pick_up_gold
         goto player_control
 
 step_player:
@@ -183,8 +171,8 @@ get_player_room:
 
     check_sector_column:
         if px<x1 then return
-        if px<x2 then pr=cr+1:return
-        pr=cr+2
+        if px<x2 then pr=pr+1:return
+        pr=pr+2
         return
 
 light_on_room:
@@ -212,14 +200,6 @@ going_to_next_level:
     lv=lv+1
     goto reset_new_level
 
-pick_up_gold:
-    ag=1+int(rnd(1)*10):rem amount of gold
-    pg=pg+ag
-    pb=floor_char
-    poke MAP_MEM+p,floor_char
-    msg$="you've got"+str$(ag)+" gold"
-    goto draw_hud
-
 
 
 reset_flags:
@@ -227,7 +207,9 @@ reset_flags:
 
     for i=0 to 8
         rf(i)=0
-        if rnd(1)<0.5 then rf(i)=2:rem room has its own light
+        if int(rnd(1)*10)>=lv-1 then rf(i)=2:goto reset_done:rem light is on
+        if int(rnd(1)*15)=0 then rf(i)=8:rem it's a maze room
+        reset_done:
     next i
 
     nr=int(rnd(1)*4):rem number of phantom rooms (0-3)
@@ -235,10 +217,10 @@ reset_flags:
     for i=1 to nr
         r=int(rnd(1)*9)
 
-        check_phantom_room_for_phantom_room:
-            if (rf(r) and 1)=0 then set_phantom_room
+        check_normal_room_for_phantom_room:
+            if (rf(r) and 9)=0 then set_phantom_room:rem 1+8=phantom+maze
             r=r+1:if r>8 then r=0
-            goto check_phantom_room_for_phantom_room
+            goto check_normal_room_for_phantom_room
 
         set_phantom_room:
             rf(r)=rf(r) or 1:rem set room as phantom room
@@ -265,21 +247,28 @@ create_map:
     shrink_rooms:
         print "   shrink rooms..."
         for i=0 to 8
-            if (rf(i) and 1)<>0 then shrink_done
             xs=rm(i,tl,x):ys=rm(i,tl,y)
             xe=rm(i,br,x):ye=rm(i,br,y)
 
-            dx=xe-xs-iw*2:dy=ye-ys-iw*2
-            if dx>0 then xs=xs+int(rnd(1)*dx)
-            if dy>0 then ys=ys+int(rnd(1)*dy)
-            dx=xe-xs-iw:dy=ye-ys-iw
-            if dx>0 then xe=xe-int(rnd(1)*dx)
-            if dy>0 then ye=ye-int(rnd(1)*dy)
+            if (rf(i) and 1)=0 then set_room
 
-            rm(i,tl,x)=xs:rm(i,tl,y)=ys
-            rm(i,br,x)=xe:rm(i,br,y)=ye
+            set_phantom_room_position:
+                dx=xe-xs:dy=ye-ys
+                xs=xs+int(rnd(1)*dx):xe=xs
+                ys=ys+int(rnd(1)*dy):ye=ys
+                goto shrink_done
+
+            set_room:
+                dx=xe-xs-iw*2:dy=ye-ys-iw*2
+                if dx>0 then xs=xs+int(rnd(1)*dx)
+                if dy>0 then ys=ys+int(rnd(1)*dy)
+                dx=xe-xs-iw:dy=ye-ys-iw
+                if dx>0 then xe=xe-int(rnd(1)*dx)
+                if dy>0 then ye=ye-int(rnd(1)*dy)
 
             shrink_done:
+                rm(i,tl,x)=xs:rm(i,tl,y)=ys
+                rm(i,br,x)=xe:rm(i,br,y)=ye
         next i
 
     set_room_connections:
@@ -338,11 +327,18 @@ draw_map:
         print "   draw rooms..."
         for i=0 to 8
             if (rf(i) and 1)<>0 then poke MAP_MEM+rm(i,tl,x)+rm(i,tl,y)*40,corridor_char:goto room_drawing_done
-            poke tlx_var,rm(i,tl,x)
-            poke tly_var,rm(i,tl,y)
-            poke brx_var,rm(i,br,x)
-            poke bry_var,rm(i,br,y)
-            sys draw_room
+            if (rf(i) and 8)=0 then draw_normal_room
+
+            draw_maze_room:
+                print "     {white}maze room - under construct...{light blue}"
+                rem goto room_drawing_done
+
+            draw_normal_room:
+                poke tlx_var,rm(i,tl,x)
+                poke tly_var,rm(i,tl,y)
+                poke brx_var,rm(i,br,x)
+                poke bry_var,rm(i,br,y)
+                sys draw_room
 
             room_drawing_done:
         next i
@@ -436,69 +432,4 @@ add_staircase:
         nx=rm(r,tl,x)+1+int(rnd(1)*(rm(r,br,x)-rm(r,tl,x)-2))
         ny=rm(r,tl,y)+1+int(rnd(1)*(rm(r,br,y)-rm(r,tl,y)-2))
         poke MAP_MEM+nx+ny*40,staircase_char
-
-    return
-
-
-
-add_initial_monsters:
-    print "{down} add initial monsters..."
-    mc=0
-    for r=0 to 8
-        if (rf(r) and 1)=0 and rnd(1)<0.2 then gosub add_monster
-    next r
-    return
-
-add_monster:
-    if mc=26 then return:rem can't be here more monster than 26
-    set_monster_position:
-        mp(mc,x)=rm(r,tl,x)+1+int(rnd(1)*(rm(r,br,x)-rm(r,tl,x)-2))
-        mp(mc,y)=rm(r,tl,y)+1+int(rnd(1)*(rm(r,br,y)-rm(r,tl,y)-2))
-        p=mp(mc,x)+mp(mc,y)*40
-        if peek(MAP_MEM+p)<27 then set_monster_position:rem 0:player, 1-26:monster
-
-    mt(mc)=1+int(rnd(1)*26):rem set type
-    mb(mc)=peek(MAP_MEM+p):rem monster background
-    poke MAP_MEM+p,mt(mc):rem place monster
-    mc=mc+1
-    return
-
-
-
-add_treasures:
-    print "{down} add treasures..."
-
-    if rnd(1)>0.05 then tr=-1:goto set_normal_rooms
-
-    add_treasure_room:
-        print "   add treasure room..."
-        tr=int(rnd(1)*9)
-
-        check_phantom_room_for_treasure_room:
-            if (rf(tr) and 1)=0 then set_treasure_for_room
-            tr=tr+1:if tr>8 then tr=0
-            goto check_phantom_room_for_treasure_room
-
-        set_treasure_for_room:
-            rem 2-5 treasure or item
-            rem 100% monster for all
-
-    set_normal_rooms:
-        for r=0 to 8
-            if (rf(r) and 1)<>0 or tr<>-1 then add_treasure_done
-
-            if rnd(1)>0.5 then add_treasure_done
-
-            set_treasure_position:
-                tx=rm(r,tl,x)+1+int(rnd(1)*(rm(r,br,x)-rm(r,tl,x)-2))
-                ty=rm(r,tl,y)+1+int(rnd(1)*(rm(r,br,y)-rm(r,tl,y)-2))
-                p=tx+ty*40
-                if peek(MAP_MEM+p)<>floor_char then set_treasure_position
-
-            poke MAP_MEM+p,gold_char
-            if rnd(1)<0.8 then gosub add_monster
-
-            add_treasure_done:
-        next r
-
-    return
+        return
