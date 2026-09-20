@@ -1,5 +1,15 @@
 # tárgyak
 
+összesen 7 tárgytípus van
+random(0..99) dönti el hogy melyik tárgyra van szükség
+    0..25  - Potion (26)
+    26..61 - Scroll (36)
+    62..77 - Food   (16)
+    78..84 - Weapon (7)
+    85..91 - Armor  (7)
+    92..95 - Ring   (4)
+    96..99 - Stick  (4)
+
 1. potion - Bájitalok (14 típus)
     Név	                                Esély	Hatás                                           Üzenet
     confusion - Zavarodottság	        7%	    Rossz irányba mozogsz véletlenszerűen           Wait, what's going on here. Huh? What? Who?
@@ -105,13 +115,18 @@
     teleportation - Teleportálás	    5%	    0	        Mindig átkozott - véletlenszerűen teleportál a térképen
     stealth - Lopakodás	                7%	    +1	        Nem ébreszted fel az alvó szörnyeket
     maintain armor - Páncél-fenntartás	5%	    +1	        Véd az Aquator rozsdásítása ellen
-- bal és jobb kézebn lehet gyűrűt6 hordani
-- egy gyűrű lehet
-    - x% eséllyel (+) enhanced (elvarázsolt: ...)
-    - x% eséllyel (n) normal (normál: ...)
-    - x% eséllyel (-) cursed (átkozott: ...)
+- bal és jobb kézebn lehet gyűrűt hordani
 - hatás + étel-fogyasztás
 - a negatív "étel/kör" azt jelenti: a gyűrű ad étel-tartalékot, nem fogyaszt
+- van 4 gyűrű amik lehetnek enhanced (+1 vagy +2) vagy cursed (-1) ami úgy dől el hogy mod=random(0..2) és ha 0 akkor mod=-1
+    - protection
+    - add strength
+    - dexterity
+    - increase damage
+- van 2 gyűrű ami mindig cursed, de nem módósítanak semmilyen statot
+    - aggravate monster
+    - teleportation
+- a cursed gyűrűket nem lehet levenni csak ha már levettük róluk az átkot
 
 7. food - Étel
 - A játékos gyomra max. 2000 egység ételt tárolhat.
@@ -122,3 +137,27 @@
 - Étkezéskor 1100–1500 közötti véletlen mennyiség kerül a játékos gyomrába.
 - 90% eséllyel "sima" étel (70%-ban rossz ízű, de ez nem árt, sőt XP-t ad!), 10%-ban "finom" gyümölcs.
 - Biztonsági háló: ha 3 szinten át nem generálódott étel, a következő tárgygenerálás kényszerítve étel lesz.
+
+
+
+## tárolás / általános mezők
+
+Az eredeti Rogue-ban minden tárgy ugyanazt a fix méretű rekordot használja, mint amit a hős/szörny is - csak más mezőnevekkel:
+
+    type      - kategória (POTION, SCROLL, WEAPON, ARMOR, RING, STICK, FOOD, GOLD, AMULET)
+    pos       - hol fekszik a padlón
+    text      - felirat (pl. tekercs neve, amíg nincs azonosítva)
+    launch    - mivel lőhető ki (pl. nyílnál: BOW)
+    packch    - milyen betűvel jelenik meg a csomagban (a-z)
+    damage    - kézben tartva ekkora a sebzése ("NxM")
+    hurldmg   - eldobva ekkora a sebzése
+    count     - darabszám (pl. 30 nyílvessző egy kötegben)
+    which     - melyik konkrét fajta a kategórián belül
+    hplus     - találat-módosító (fegyvernél)
+    dplus     - sebzés-módosító (fegyvernél)
+    arm       - TÖBBCÉLÚ mező: páncélnál védelmi érték, pálcánál töltésszám (charges), aranynál az érték (goldval)
+    flags     - bitflagek: ISCURSED (átkozott, nem vehető le), ISKNOW (azonosítva), ISMISL (hajítható), ISMANY (kötegben jelenik meg), ISFOUND (már felfedezett - ugyanaz a bit mint a szörnyeknél), ISPROT (páncél tartósan védett)
+    group     - csoport-azonosító (kötegelt hajítható tárgyaknál)
+    label     - a hős saját elnevezése ('c' - call parancs)
+
+- eredetileg minden tárgy tartalmazza az összes mezőt...
