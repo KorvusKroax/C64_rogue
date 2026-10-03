@@ -12,10 +12,14 @@
     hp -= sebzés
     halál = hp <= 0
 
+
+
 - szörny támadása ugyanaz, de
         - fegyver_támadás_módosító = 0 (nincs fegyvere)
         - erő = 10 -> str_plus[erő] = 0
     azaz többnyire csak egy sima d20 dobás
+
+
 
 - alvó/fogva tartott (nem "futó" állapotú) célpont ellen +4 bónusz jár a találathoz
 - a védekező páncélja:
