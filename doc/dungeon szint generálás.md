@@ -1,5 +1,7 @@
 # dungeon szint generálás
 
+- A generálási sorrend a kódban: `do_rooms` (szoba, arany, szörny) → `do_passages` → `no_food++` → `put_things` (kincsesszoba, 9 próba, amulett) kivéve ha amulet && level < max_level → csapdák → lépcső → játékos
+
 ## szobák és folyosók generálása
 1. 3x3 szektor beállítása a képernyő mérete alapján
     - eredetileg mind a 9 szektor egyforma kiterjedésű terület (már amennyire lehet)
@@ -12,6 +14,7 @@
         - a bal_felso_sarok és a jobb_also_sarok felveszi a szektor méreteit -1 mező minden irányból hogy legyen legalább egy mező két szoba közt a folyosóknak
             - uj_bal_felso_sarok = random(bal_felso_sarok..(jobb_also_sarok - 2 * minimum_belso_faltavolsag))
             - uj_jobb_also_sarok = random(uj_bal_felso_sarok..(jobb_also_sarok - minimum_belso_faltavolsag))
+        - eredetileg: szektor 26×8, `top.x = (i%3)*26+1`, `top.y = (i/3)*8`, `r_max.x = rnd(bsze.x−4)+4`, `r_max.y = rnd(bsze.y−4)+4` (falakkal együtt), `pos = top + rnd(bsze − r_max)`, ismételve amíg `pos.y != 0`
     3. kitaláljuk hogy ez egy sötét szoba vagy sem
         - sotetseg_flag = random(0..9) < dungeon_szint - 1
             - ha ez egy sötét szoba akkor még kiderítjük hogy ez valójában egy labirintus szoba vagy sem
@@ -28,8 +31,8 @@
             - ha nincs egy szomszéd szoba sem akkor ugrunk a 2. pontra vagy kiválasztjuk a következő szobát és ugrunk a 3. pontra
         4. véletlenszerűen kiválasztunk egyet a "neighbor" listából (B szoba)
         5. be kell állítani a kapcsolatot a két szoba közt
-            - ha A szoba keletre vagy délre van a B szobához képest akkor az A szobához kell beírni a kapcsolatot
-            - ha B szoba keletre vagy délre van az A szobához képest akkor a B szobához kell beírni a kapcsolatot
+            - ha A szoba keletre vagy délre van a B szobához képest akkor az B szobához kell beírni a kapcsolatot
+            - ha B szoba keletre vagy délre van az A szobához képest akkor a A szobához kell beírni a kapcsolatot
         6. be kell állítani hogy a B szoba is "connected" és be kell tenni a "visited" listába
         7. mindezt ismételjük a 2. ponttól amíg nem lesz minden szoba "connected" (ez 8 kör a loop-ban)
     - további, de nem kötelező összeköttetések, hogy lehessen több útvonal egy-egy szobához
@@ -52,7 +55,7 @@
             - folyosó rajzolás (horizontális vagy vertikális)
                 1. beállítjuk az A (jelenlegi) és B (szomszéd) szobákat
                 2. kiválasztjuk az ajtók helyét a két szoba egymás felé néző falain
-                    - ha valamelyik egy fantom szoba akkor ott ez a mező a jobb_felso_sarok
+                    - ha valamelyik egy fantom szoba akkor ott ez a mező a bal_felso_sarok
                     - amelyik nem fantom szoba ott erre a mezőre berajzolunk egy ajtót a falra
                 3. berajzoljuk a két mező közti folyosót
                     - ha ugyanabban a sorban(horizontális) vagy oszlopban(vertikális) vannak, húzunk egy egyenes folyosót
@@ -72,7 +75,7 @@
 - 9 alkalommal próbálunk 36% eséllyel letenni egy generált tárgyat egy dungeon szinten a szobák szabad padló mezőire
 - teszünk a szint szobáiba aranyat
     - 50% esély van arra hogy arany kerül a szobába
-    - mennyiség: random(0..(50 + 10 * dungeon_szint)) + 2
+    - mennyiség: random(0..(50 + 10 * dungeon_szint - 1)) + 2
 - az amulett a 26. dungeon_szint-en és attól mélyebben minden szinten megjelenik amíg azt a játékos meg nem találja
 
 
@@ -86,14 +89,15 @@
     - kisorsolunk egy véletlen csapdatípust, ez a 8 féle lehet:
         - verem (trapdoor)                      azonnal egy szinttel lejjebb esik a játékos (mintha lépcsőn menne le)
         - nyílcsapda (arrow)                    találat-dobás (a játékos szintje-1, +1 módosító); siker esetén 1d6 sebzés; kudarc esetén a nyílvessző földre esik, felvehető
-        - altató gáz (sleeping gas)             a játékos elalszik pár körre (~5 kör), a futása megszakad
-        - medvecsapda (bear trap)               a játékos lába beszorul, pár körig (~3 kör) nem tud mozogni
+        - altató gáz (sleeping gas)             a játékos elalszik 5 körre, ISRUN állapot megszakad
+        - medvecsapda (bear trap)               a játékos lába beszorul, 3 körig nem tud mozogni
         - teleport csapda                       a játékos véletlen helyre teleportálódik a szinten
         - mérgezett nyílcsapda (poison dart)    találat-dobás (a játékos szintje+1, +1 módosító); siker esetén 1d4 sebzés + esély (sikertelen mérgezés-mentődobás esetén) 1 pont erővesztésre
         - rozsda csapda (rust trap)             vízsugár éri, rozsdásítja a felszerelt páncélt (ugyanaz a hatás, mint az Aquatornál)
         - rejtélyes csapda (mysterious trap)    11-féle véletlen szöveg (pl. "furcsa fény villan a szemedbe"), TÉNYLEGES játékmechanikai hatása NINCS
 - ha a játékos lebeg (Levitáció bájital/gyűrű hatása alatt van), simán átsiklik bármelyik csapda felett, akármi is az, semmilyen hatás nem éri
 - ha a játékos hallucinál, a csapda ütésekor egy véletlenszerű (nem feltétlenül a valódi) csapdatípus nevét írja ki üzenetben
+- A csapdák állandók, minden rálépéskor újra aktiválódnak
 
 
 
@@ -126,7 +130,7 @@
         - szornyek_szama = MAX(szornyek_szama, (targyak_szama + 2))
         - szornyek_szama = MIN(szornyek_szama, szoba_belso_terulete)
         - minden tárgyhoz kötelezően tartozik egy szörny amit úgy generálunk le mintha a következő szintre sorsolnánk ki (azaz dungeon_szint + 1-gyel hívjuk a generálást)
-    5. legeneráljuk és letesszük a szörnyeket
+    5. legeneráljuk és letesszük a szörnyeket amik mind kötelezően ISMEAN állapotban vannak
 
 
 
@@ -154,13 +158,13 @@
 
     MONSTERS    'A'..'Z'
 
-    WALL_H      '-' - visszintes fal
+    WALL_H      '-' - vízszintes fal
     WALL_V      '|' - függőleges fal
 
     WALL_CORNER_TL - sarok fal bal felső
     WALL_CORNER_TR - sarok fal jobb felső
     WALL_CORNER_BR - sarok fal jobb alsó
-    WALL_CORNER_BL - sarok fal baql alsó
+    WALL_CORNER_BL - sarok fal bal alsó
 
 - egy mező 1 byte 0-127
 - a 7. bit azt jelzi hogy a mezőn lévő csapda, titkos ajtó/folyosó rejtett (1) vagy sem (0)

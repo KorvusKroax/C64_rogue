@@ -1,17 +1,17 @@
 ## általános statok:
-    	játékosnál	                            szörnynél
-str	    erő, fegyverbónuszhoz	                ritkán változik, de számít pl. Rattlesnake mérgénél
-exp	    jelenlegi tapasztalat	                mennyi XP-t kapsz, ha megölöd
-lvl	    karakterszint	                        hit dice / nehézségi szint - ez megy be a támadás értékbe at_lvl-ként
-arm	    páncél (a felszerelt tárgy felülírja)   a szörny natúr páncélértéke
-dmg     fegyver nélküli ütés sebzése ("1x2")	több támadás is lehet egyszerre, /-lel elválasztva (pl. egy sárkánynál karom/karom/harapás)
-hpt     jelenlegi életpont                      ugyanaz
-maxhp	életpont	                            ugyanaz
+    	játékosnál	                                    szörnynél
+str	    erő, fegyverbónuszhoz (3..31 közé korlátozott)	ritkán változik, de számít pl. Rattlesnake mérgénél
+exp	    jelenlegi tapasztalat	                        mennyi XP-t kapsz, ha megölöd
+lvl	    karakterszint	                                hit dice / nehézségi szint - ez megy be a támadás értékbe at_lvl-ként
+arm	    páncél (a felszerelt tárgy felülírja)           a szörny natúr páncélértéke
+dmg     fegyver nélküli ütés sebzése ("1x2")	        több támadás is lehet egyszerre, /-lel elválasztva (pl. egy sárkánynál karom/karom/harapás)
+hpt     jelenlegi életpont                              ugyanaz
+maxhp	életpont	                                    ugyanaz
 
-pos     aktuális koordináta (x,y)               ugyanaz
-room    aktuális szoba                          ugyanaz
-flags   állapotjelzők (bitflagek)               ugyanaz
-pack    tárgylista (max 23 tárgy)               ugyanaz
+pos     aktuális koordináta (x,y)                       ugyanaz
+room    aktuális szoba                                  ugyanaz
+flags   állapotjelzők (bitflagek)                       ugyanaz
+pack    tárgylista (max 23 tárgy, az azonos típusú bájitalok, tekercsek és ételek összevonódnak, a hajítófegyverek kötegei csak megfelelő csoportazonosítóval egyesülnek)
 
 oldch   mi volt a mezőn mielőtt ráállt          ugyanaz
 
@@ -24,32 +24,32 @@ turn        ha le van lassítva, ez a kör számít-e nála
 
 ## szörnyek alap statjai
         name	                            carry	    flags	                str	    exp	     lvl    arm	    dmg             special attack
-A	    aquator (vízi lény)	                0%	        ISMEAN	                10	    20	     5	    2	    0x0/0x0         páncélt rozsdásít (max 9ig, de bőr páncélra nincs hatása)
-B	    bat (denevér)	                    0%	        ISFLY	                10	    1	     1	    3	    1x2             véletlenszerű irányokba röpköd
-C	    centaur (kentaur)	                15%	        -	                    10	    17	     4	    4	    1x2/1x5/1x5
-D	    dragon (sárkány)	                100%	    ISMEAN	                10	    5000	 10	    −1	    1x8/1x8/3x10    nagy távolságú "6d6" láng támadás -> ha 1d20 < 17 - pancel_vedelem - int(szint / 2)
-E	    emu	                                0%	        ISMEAN	                10	    2	     1	    7	    1x2
-F	    venus flytrap (légyfogó)	        0%	        ISMEAN	                10	    80	     8	    3	    %%%x0           fogva tart / 0 a sebzése, de növekszik körönként 1gyel
-G	    griffin (griff)	                    20%	        ISMEAN, ISFLY, ISREGEN	10	    2000	 13	    2	    4x3/3x5
-H	    hobgoblin	                        0%	        ISMEAN	                10	    3	     1	    5	    1x8
-I	    ice monster (jégszörny)	            0%	        -	                    10	    5	     1	    9	    0x0             fagyasztás -> ha 1d20 < 14 - int(szint / 2) ^ 2
-J	    jabberwock	                        70%	        -	                    10	    3000	 15	    6	    2x12/2x4
-K	    kestrel (vércse)	                0%	        ISMEAN, ISFLY	        10	    1	     1	    7	    1x4
-L	    leprechaun	                        0%	        -	                    10	    10	     3	    8	    1x1             aranyat lop a játékostól -> ha 1d20 < 17 - pancel_vedelem - int(szint / 2)
-M	    medusa	                            40%	        ISMEAN	                10	    200	     8	    2	    3x4/3x4/2x5     összezavarás -> ha 1d20 < 17 - pancel_vedelem - int(szint / 2) -> csak egyszer próbálkozik, ha nem sikerül a mentődobás a juátékos ISHUH lesz ami spread(20) (19..20) körig hat
-N	    nymph	                            100%	    -	                    10	    37	     3	    9	    0x0             használaton kívül lévő varázstárgyakat lop a játékostól
-O	    orc (ork)	                        15%	        ISGREED	                10	    5	     1	    6	    1x8
-P	    phantom (fantom)	                0%	        ISINVIS	                10	    120	     8	    3	    4x4
-Q	    quagga	                            0%	        ISMEAN	                10	    15	     3	    3	    1x5/1x5
-R	    rattlesnake (csörgőkígyó)	        0%	        ISMEAN	                10	    9	     2	    3	    1x6             csökkenti a játékos erejét -> ha 1d20 < 14 - int(szint / 2) ^ 2
-S	    snake (kígyó)	                    0%	        ISMEAN	                10	    2	     1	    5	    1x3
-T	    troll	                            50%	        ISREGEN, ISMEAN	        10	    120	     6	    4	    1x8/1x8/2x6
-U	    black unicorn (fekete unikornis)	0%	        ISMEAN	                10	    190	     7	    −2	    1x9/1x9/2x9
-V	    vampire (vámpír)	                20%	        ISREGEN, ISMEAN	        10	    350	     8	    1	    1x10            30% esély hogy csökkenti a játékos maxhp-ját random(1..3)-mal
-W	    wraith (kísértet)	                0%	        -	                    10	    55	     5	    4	    1x6             15% esély a szintelszívásra -> 1-gyel csökken a szint és 1d10-zel csökken a maxhp, 0. szint halált okoz
-X	    xeroc	                            30%	        -	                    10	    100	     7	    7	    4x4             egy tárgynak mutatja magát
-Y	    yeti	                            30%	        -	                    10	    50	     4	    6	    1x6/1x6
-Z	    zombie	                            0%          ISMEAN	                10	    6	     2	    8	    1x8
+A	    aquator (vízi lény)	                0%	        ISMEAN	                10	    20	     5	    2	    0x0/0x0         a sikeres támadás nem sebez hanem páncélt rozsdásít (+1 pancel_vedelem) támadásonként egyszer max 9ig, de bőr páncélra nincs hatása
+B	    bat (denevér)	                    0%	        ISFLY	                10	    1	     1	    3	    1x2             üldözéskor minden mozgásnál 50% eséllyel véletlen járható szomszédos mezőre lép; az ISFLY miatt, ha az első lépés után a játékostól mért távolság négyzete legalább 3, ugyanabban a körben még egyszer lép
+C	    centaur (kentaur)	                15%	        -	                    10	    17	     4	    4	    1x2/1x5/1x5     -
+D	    dragon (sárkány)	                100%	    ISMEAN	                10	    5000	 10	    −1	    1x8/1x8/3x10    ha a játékos egy vonalban van vele vízszintesen, függőlegesen 6 mező vagy átlósan 4 mező távolságon belül van (távolság^2 <= 36) akkor 20% eséllyel lépés helyett egy a falakról is visszapattanó láng támadást végezhet -> ha varázsmentődobás nem sikerül akkor 6d6 sebzést okoz
+E	    emu	                                0%	        ISMEAN	                10	    2	     1	    7	    1x2             -
+F	    venus flytrap (légyfogó)	        0%	        ISMEAN	                10	    80	     8	    3	    %%%x0           a sikeres támadása ISHELD állapotot okoz, minden körben sebez ami minden sikeres találatkor (már az elsőnél is) növekszik 1gyel
+G	    griffin (griff)	                    20%	        ISMEAN, ISFLY, ISREGEN	10	    2000	 13	    2	    4x3/3x5         -
+H	    hobgoblin	                        0%	        ISMEAN	                10	    3	     1	    5	    1x8             -
+I	    ice monster (jégszörny)	            0%	        -	                    10	    5	     1	    9	    0x0             minden sikeres támadás fagyasztást okoz, nem tud semmit csinálni a játékos random(2..3) körig, ez összeadódik és ha ez 50 fölé nő a játékos meghal
+J	    jabberwock	                        70%	        -	                    10	    3000	 15	    6	    2x12/2x4        -
+K	    kestrel (vércse)	                0%	        ISMEAN, ISFLY	        10	    1	     1	    7	    1x4             -
+L	    leprechaun	                        0%	        -	                    10	    10	     3	    8	    1x1             az első sikeres támadás esetén random(2..51+10*dungeon_szint) mennyiségű aranyat lop a játékostól, majd ha nem sikerül a varázsmentődobás akkor még további 4szer lop a játékostól majd mindezek után eltűnik
+M	    medusa	                            40%	        ISMEAN	                10	    200	     8	    2	    3x4/3x4/2x5     összezavarás -> amikor a játékost észreveszi (ISRUN állapotba kerül) sikertelen varázsmentődobás esetén a játékos ISHUH lesz ami spread(20) (19..20) körig hat ("the medusa's gaze has confused you"), csak egyszer próbálkozik, ISBLIND és/vagy ISHALU állapotban lévő játékosra hatástalan, csak akkor hat, ha a szoba világos, vagy a távolság^2 < 3
+N	    nymph	                            100%	    -	                    10	    37	     3	    9	    0x0             sikeres támadáskor használaton kívül lévő varázstárgyak közül ellop egyet a játékostól, ha volt mit lopnia eltűnik a tárgyal együtt, egyébként tovább támad (de nem sebez)
+O	    orc (ork)	                        15%	        ISGREED	                10	    5	     1	    6	    1x8             -
+P	    phantom (fantom)	                0%	        ISINVIS	                10	    120	     8	    3	    4x4             -
+Q	    quagga	                            0%	        ISMEAN	                10	    15	     3	    3	    1x5/1x5         -
+R	    rattlesnake (csörgőkígyó)	        0%	        ISMEAN	                10	    9	     2	    3	    1x6             sikeres találatkor méreg elleni mentődobás is kell, ha nem sikerül 1gyel csökken a játékos erő statja
+S	    snake (kígyó)	                    0%	        ISMEAN	                10	    2	     1	    5	    1x3             -
+T	    troll	                            50%	        ISREGEN, ISMEAN	        10	    120	     6	    4	    1x8/1x8/2x6     -
+U	    black unicorn (fekete unikornis)	0%	        ISMEAN	                10	    190	     7	    −2	    1x9/1x9/2x9     -
+V	    vampire (vámpír)	                20%	        ISREGEN, ISMEAN	        10	    350	     8	    1	    1x10            sikeres találatkor 30% eséllyel még további random(1..3)-mal csökkenti (elszív) a játékos hp-ját ami viszon t már a maxhp-ból is levonódik, de ez az extra elszívás nem viheti 1 hp alá a játékost, ha maxhp <= 0 akkor a játékos meghal
+W	    wraith (kísértet)	                0%	        -	                    10	    55	     5	    4	    1x6             sikeres találatkor 15% esély a szintelszívásra -> 1-gyel csökken a játékos szintje, xp lecsökken az új szinthez szükséges minimum xp+1-re, és 1d10-zel csökken a hp és a maxhp, a hp 1 alá nem eshet, de ha a maxhp 0 alá esik vagy a támadáskor az xp 0 akkor a játékos meghal
+X	    xeroc	                            30%	        -	                    10	    100	     7	    7	    4x4             egy tetszőleges tárgynak mutatja magát, amikor a játékos megpróbál ráálni hogy felvegye (ezt úgy érzékeli a program hogy egy szörnyet támad de elsőre csak sebzés nélkül), felfedi magát de csak a következő körben kezd harcolni
+Y	    yeti	                            30%	        -	                    10	    50	     4	    6	    1x6/1x6         -
+Z	    zombie	                            0%          ISMEAN	                10	    6	     2	    8	    1x8             -
 - az alacsonyabb páncél (arm) érték a jobb
 - ha egy szörnynek van carry esélye, és nem a játékos szobájában van, és nem látja a játékost, akkor random(0..99) < carry eséllyel egy padlón heverő tárgy felé indul, és felveszi azt a csomagjába, amikor odaér
 
@@ -58,28 +58,29 @@ Z	    zombie	                            0%          ISMEAN	                10	 
     CANHUH      zavarást tud okozni (ráteszi a ISHUH flag-et)
     CANSEE      látja a láthatatlan lényeket
     ISBLIND     vakság -> stagnáló, nem frissülő térkép
-    ISLEVIT     lebegés -> nincs hatása a csapdáknak amikor a játékos rálép, és az alvó ISMEAN szörnyek NEM ébrednek fel a szobába lépéskor (ugyanaz a feltétel-kivétel, mint a lopakodás-gyűrűnél)
+    ISLEVIT     lebegés -> nincs hatása a csapdáknak amikor a játékos rálép, és az alvó ISMEAN szörnyek NEM ébrednek fel a szobába lépéskor (ugyanaz a feltétel-kivétel, mint a lopakodás-gyűrűnél), de nem lehet lépcsőzni és tárgyat felvenni
     ISHALU      hallucinálás -> minden körben újrarajzolja a látható mezőket és véletlenszerű betűkkel jeleníti meg a szörnyeket és a tárgyakat - tisztán vizuális hatás, a SEEMONST-ra is hat (850 kör)
     SEEMONST    érzékeli a szörnyeket a falakon kerszetül is (inverzen jelennek meg ammik egyébként nem látszanának), de az ISINVIS szörnyek ekkor sem látszanak (ahhoz CANSEE kell), ha nincs mit mutatni ez az üzenet: "you have a strange/normal feeling for a moment, then it passes"
 
-    ISHUH       zavarodott -> véletlenszerű mozogás, 80% eséllyel a szándékolt irány felülíródik azaz dir_x=random(-1..1), dir_y=random(-1..1) ha több hatás van, időtartalmak összeadódnak
-    ISHASTE     fel van gyorsítva - 2 lépés/kör
-    ISHELD      fogva van tartva (elkapta egy Venus Flytrap) -> nem tud ellépni a mezőről ahol áll amíg a flytrap meg nem hal (harcolni, tárgyat használni, stb lehet)
+    ISRUN       a játékos cselekvőképes, lekerül a flag ha elalszik (sleep tekercs, sleeping gas), le van fagyasztva (ice monster), kimerülten elájul random(0..7) körre (haste állapotban kap mégegy haste hatást), az időtartam lejártával visszaállítódik, akkor is lejön ha éhes vagy gyenge állapotba kerül
+    ISHUH       zavarodott -> véletlenszerű mozogás, 80% eséllyel a szándékolt irány felülíródik azaz dir_x=random(-1..1), dir_y=random(-1..1) (0,0 irány nem fogyaszt idődt), dobásnál 20% eséllyel lesz véletlenszerű az irány, ha több hatás van, időtartalmak összeadódnak
+    ISHASTE     fel van gyorsítva -> 2 akció körönként
+    ISHELD      fogva van tartva (elkapta egy Venus Flytrap) -> nem tud ellépni a mezőről ahol áll amíg a flytrap meg nem hal (harcolni, tárgyat használni, stb lehet), az elteleportálás is segít, ilyenkor törlödik az ISHELD állapot és nullázódik a flytrap sebzése
 
 - szörnyek flag-jei
-    ISMEAN      alszik -> a szobába lépő játékos ha nem ISLEVIT és nincs stealth gyűrűje sem akkor random(0..2)!=0 esetén felébreszti és az ISRUN flag bekapcsolódik
-    ISFLY       repül -> miután megtette a normál lépését, ha még mindig elég messze van a játékostól, MÉG EGYSZER lép ugyanabban a körben
-    ISREGEN     regenerálódik a HP-ja -> minden harci kör végén 33% eséllyel +1 HP-t kap
-    ISGREED     kapzsi -> amíg van arany a szobában addíg az aranyra megy előbb, nem a játékosra (ork)
+    ISMEAN      a szobába lépő játékos ha nem ISLEVIT és nincs stealth gyűrűje sem akkor random(0..2)!=0 esetén felébreszti és az ISRUN flag bekapcsolódik
+    ISFLY       repül -> miután megtette a normál lépését, ha még mindig elég messze van a játékostól (távolság^2 >= 3), MÉG EGYSZER lép ugyanabban a körben
+    ISREGEN     regenerálódik a HP-ja -> minden harci kör végén 33% eséllyel +1 HP-t kap (5.4.4-ben erre nincs mechanika, csak a flag létezik (bug?))
+    ISGREED     kapzsi -> amíg van arany a szobában addíg az aranyra megy előbb és ráül (őrzi), ha nincs arany a szobában csak akkor megy a játékos után
     ISINVIS     láthatatlan -> csak akkor látszik ha a CANSEE aktív
-    ISRUN       éppen üldözi a játékost ("felébredt", ez indítja el a mozgást egyáltalán)
     ISSLOW      le van lassítva -> csak minden MÁSODIK körben cselekszik
     ISCANC      speciális képessége ki van kapcsolva (Staff of Cancellation)
-    ISFOUND     már észlelte/felfedezte a játékost (vagyis ez a szörny MÁR EGYSZER elsütötte a speciális képességét)
+    ISFOUND     már észlelte/felfedezte a játékost (vagyis ez a szörny MÁR EGYSZER elsütötte a speciális képességét), akkor is beállítódik ha a mentődobás sikeres (de leginkább nem jó semmire)
     ISTARGET    ez a szörny a célpontja a játékos 'f' (harc a halálig) parancsának
 
-    ISHUH       zavarodott - véletlenszerű mozogás (ugyanaz mint a játékosnál)
-    ISHASTE     fel van gyorsítva - 2 lépés/kör - 29. szint fölött automatikusan minden szörny megkapja
+    ISRUN       éppen üldözi a játékost ("felébredt", ez indítja el a mozgást egyáltalán)
+    ISHUH       zavarodott - 80%-ban véletlenszerűen mozog, de minden zavart lépésnél ez 1/20 eséllyel feloldódik
+    ISHASTE     fel van gyorsítva -> 2 akció körönként (29. szint fölött automatikusan minden szörny megkapja)
     ISHELD      fogva van tartva (Hold Monster tekercstől) - ilyenkor egyáltalán nem mozog
 
 
@@ -113,8 +114,9 @@ Kezdő felszerelés:
 
 - a vándorló szörny spread(70) (azaz 67..73) kör mulva elindul egy ellenörzés
     - minden 4. körben megnézzük hogyha random(1..6) == 4 akkor generálódik egy vándorló szörny
-    - generálás után a körszámláló reset-elődik majd a következő random(56..84) kör mulva újra kezdődik a 4 körönkénti ellenőrzés
-    - bármelyik járható (folyosó, padló - bármi, ahol lehet állni) mezőre lehelyeződhet de sosem abban a szobába ahol a játékos van éppen
+    - generálás után a körszámláló reset-elődik majd a következő random(67..73) (spread(70)) kör mulva újra kezdődik a 4 körönkénti ellenőrzés
+    - bármelyik szobában, járható mezőre lehelyeződhet de sosem abban a szobába ahol a játékos van éppen
+    - nem kapnak tárgyat
 
 1. szörny típus kiválasztás
     - szorny_index = jelenlegi_dungeon_szint + (random(0..9) - 6)
@@ -141,3 +143,6 @@ Kezdő felszerelés:
                 - ha a lvl > 9          mod *= 20
                 - különben ha lvl > 6   mod *= 4
                 - ha lvl <= 6           akkor nincs szorzó, a mod változatlan marad
+3. a kezdeti szörnyeknek adunk kezdeti véletlen tárgyat
+    - ha ha a jelenlegi dungeon szint az eddig elért legmélyebb szint
+    - ha random(0..99) < carry
