@@ -32,16 +32,53 @@
 
 
 
-sikeres varázsmentődobás: 1d20 >= 17 - floor(jatekos_szint / 2) - (protection gyűrűk ha vannak)
+## hajítás lépései
 
-sikeres méreg elleni mentődobás: 1d20 >= 14 - floor(jatekos_szint / 2)
+1. Irány. A t parancs először irányt kér (which direction?).
+    - Elfogadja a h j k l y u b n billentyűket kis- és nagybetűvel, minden más billentyűre újra kérdez. Az ESC kilép (nem veszi el a kört a játékostól)
+    - Zavarodott állapotban (ISHUH) 20% eséllyel a megadott irány helyett véletlen irány lesz (a 8 irány egyike, helyben maradás nincs)
+
+2. Tárgy. Ezután kérdezi, melyik tárgyat dobod (which object do you want to throw? (* for list)).
+    - A kód bármelyik csomagbeli tárgy betűjét elfogadja
+    - A tárgytípus csak a * listát szűri (az fegyvereket mutat).
+    - bármilyen tárgyat el lehet dobni: bájitalt, tekercset, ételt, gyűrűt, pálcát, páncélt, sőt magát az Amulettet is. Az ESC kilép (nem veszi el a kört a játékostól)
+
+3. Viselt vagy kézben tartott tárgy
+    - Ha a tárgyat nem használod éppen, mehet.
+    - Ha használod, de átkozott, akkor a játék közli, hogy "you can’t. It appears to be cursed", és nem dobható. A kód ilyenkor nem adja vissza a lépést, vagyis a sikertelen kísérlet is elviszi a körödet.
+    - Ha használod, de nem átkozott, akkor a játék leveszi rólad (fegyvert a kézből, páncélt időveszteséggel, gyűrűt a hatásával együtt), és utána el tudod dobni.
+
+4. Kivétel a csomagból.
+    - Ha több darabod van (nyílvessző, tőr), a kupacból egy darab másolat kerül ki, a kupac eggyel csökken. Ha csak egy darab van, az kikerül, és a csomagbeli betűjele felszabadul.
+
+5. Repülés.
+    - A tárgy a hős mezőjéből indul, és lépésenként halad az irányban. A mozgás közbeni rajzolás csak akkor történik meg, ha a játékos látja a mezőt, és nincs "terse" mód.
+    - Addig repül, amíg a következő mező járható és nem ajtó. Távolságkorlát nincs.
+    - A megállási mező az akadály mezője lesz: fal, ajtó vagy szörny.
+
+6. Megállás. Ha nincs ott szörny, a tárgy leesik (lásd a 9. pontot). Ha van, támadás következik.
+
+7. Találat és sebzés. Ugyanaz a harci szabály fut, mint közelharcnál, a dobott tárgy adataival:
+    - Találat: d20 + a tárgy hplus értéke + az erő-bónusz, a szokásos küszöb ellen. Ha a szörny alszik vagy nem üldöz, +4 jár.
+    - Sebzés: kocka + a tárgy dplus értéke + az erő-bónusz. Hogy melyik kockát használja, az a tárgytól függ:
+
+Dobott tárgy	                                                    Sebzési kocka	            Extra
+Nyílvessző, és a hozzá való íj van a kezedben	                    hajítási (2x3)	            az íj hplus/dplus bónusza is hozzáadódik
+Nyílvessző íj nélkül	                                            közelharci (1x1)	        nincs
+Tőr, lándzsa, dobótőr, shuriken, buzogány stb. (nem kell kilövő)	hajítási kocka	            csak a saját bónuszai
+Nem fegyver (a pályán generált bájital, tekercs stb.)	            0x0, vagyis nulla kocka	    csak az erő-bónusz (Erő 7–15 között ez 0, 16–17-nél +1, 18-nál +2, 19–20-nál +3)
+
+8. Következmények találatnál.
+    - A szörny felébred és üldözni kezd, a nyugodt gyógyulásod megszakad.
+    - Ha érvényben van a "monster confusion" hatás (CANHUH), a dobott találat is összezavarja a szörnyet, és a hatás elhasználódik.
+    - Ha egy még le nem leplezett Xerocra dobsz, a játék közli, hogy "wait! That's a xeroc!". Hajításnál a dobás ezután is lefut (közelharcnál ilyenkor véget ér a lépés).
+
+9. Hová kerül a tárgy.
+    - Találat esetén sehová: a tárgy elfogy, nem esik le.
+    - Mellényúlásnál vagy falnak, ajtónak ütközve a megállási mező 3×3-as környezetéből választ egyenletes eséllyel egy padló- vagy folyosómezőt. A hős saját mezője kimarad. Ha nincs ilyen mező, a tárgy "vanishes as it hits the ground" üzenettel eltűnik.
 
 
 
-## A hajítás szabályai
-
-- minden tárgy dobható, de csak a fegyvereknek, botoknak/pálcáknak van sebzése
-- Ha a dobott tárgy eltalálja a szörnyet, végleg elvész. Mellé, falnak vagy ajtónak dobva a fall() a közelbe teszi, és ha nincs szabad mező, "vanishes as it hits the ground" üzenettel elvész.
-
-
-(`hurldmg`, launcher, `ISMISL`, íj bónuszai) és a dobott tárgy sorsa (találat után elfogy, mellé/falnak esetén `fall()`, hely nélkül "vanishes").
+## mentődobások
+- sikeres varázsmentődobás: 1d20 >= 17 - floor(jatekos_szint / 2) - (protection gyűrűk ha vannak)
+- sikeres méreg elleni mentődobás: 1d20 >= 14 - floor(jatekos_szint / 2)

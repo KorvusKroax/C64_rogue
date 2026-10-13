@@ -102,8 +102,8 @@ ezeken kívül van még
     see invisible - Láthatatlan-látás	10%	    −5	        310     CANSEE állapot
     adornment - Dísz	                1%	    0	        10      nincs hatása
     aggravate monster - Felbőszítés	    10%	    0	        10      Mindig átkozott - Felvételkor a teljes szinten minden szörny feléd indul (ISRUN állapotba kerülnek), az alvó ISMEAN szörnyek is felébrednek, az ISHELD is feloldódik (ua. mint a scroll) - viselése közben az újonnan létrejövő szörnyek is a játékos felé indulnak
-    dexterity - Ügyesség	            8%	    −3	        440     Jobb találati esély -> mod (o_arm) a találati bónuszhoz adódik
-    increase damage - Sebzésnövelés	    8%	    −3	        400     Nagyobb sebzés -> mod (o_arm) a sebzéshez adódik
+    dexterity - Ügyesség	            8%	    −3	        440     Jobb találati esély -> mod (o_arm) a találati bónuszhoz adódik, csak a kézben tartott fegyverre érvényes, a dobottra nem
+    increase damage - Sebzésnövelés	    8%	    −3	        400     Nagyobb sebzés -> mod (o_arm) a sebzéshez adódik, csak a kézben tartott fegyverre érvényes, a dobottra nem
     regeneration - Regeneráció	        4%	    +2	        460     körönként +1 HP maxhp-ig
     slow digestion - Lassú emésztés	    9%	    −2	        240     50% eséllyel körönként 1 egység étel visszaadódik (átlagosan 0,5-del kevesebb fogy körönként, két ilyen gyűrű átlagosan kioltja az éhezést)
     teleportation - Teleportálás	    5%	    0	        30      Mindig átkozott - körönként 1/50 eséllyel véletlen helyre visz a szinten
